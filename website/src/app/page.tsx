@@ -13,6 +13,7 @@ import Webring from '../components/Webring';
 import { motion, AnimatePresence, useScroll, useSpring, useMotionValue, useMotionTemplate } from 'framer-motion';
 import { ProjectVideo } from '../components/ProjectVideo';
 import HeroPhotoStack from '../components/HeroPhotoStack';
+import { GitHubActivity } from '../components/GitHubActivity';
 
 // Helper to get logo URL
 const getSkillLogo = (skill: string, isDark: boolean) => {
@@ -1055,6 +1056,17 @@ export default function Home() {
                         </motion.div>
                     </motion.div>
                 </motion.div>
+            </motion.section>
+
+            {/* GitHub Activity */}
+            <motion.section
+                style={{ marginTop: '32px' }}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            >
+                <GitHubActivity username="kaificial" />
             </motion.section>
 
             {/* Featured Projects Section */}
