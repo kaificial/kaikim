@@ -25,9 +25,44 @@ const DEFAULT_TRACK: Track = {
     id: "eta-newjeans",
     title: "ETA",
     artist: "NewJeans",
-    src: "/music/newjean.mp3",
+    src: "",
     cover: "/assets/music.jpg",
 };
+
+async function fetchDefaultTrack(): Promise<Track | null> {
+    try {
+        const term = encodeURIComponent("NewJeans ETA");
+        const res = await fetch(
+            `https://itunes.apple.com/search?term=${term}&entity=song&limit=10`
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        interface iTunesResult {
+            trackId: number;
+            trackName: string;
+            artistName: string;
+            previewUrl?: string;
+            artworkUrl100?: string;
+        }
+        const results: iTunesResult[] = data.results ?? [];
+        const hit = results.find(
+            (r) =>
+                r.previewUrl &&
+                r.trackName.toLowerCase().includes("eta") &&
+                r.artistName.toLowerCase().includes("newjeans")
+        );
+        if (!hit?.previewUrl) return null;
+        return {
+            id: String(hit.trackId),
+            title: "ETA",
+            artist: "NewJeans",
+            src: hit.previewUrl,
+            cover: DEFAULT_TRACK.cover,
+        };
+    } catch {
+        return null;
+    }
+}
 
 // Pull a random song from API route
 async function fetchRandomTrack(): Promise<Track | null> {
@@ -59,7 +94,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         let cancelled = false;
-        const audio = new Audio(DEFAULT_TRACK.src);
+        const audio = new Audio();
         audio.preload = "metadata";
         audioRef.current = audio;
 
@@ -92,6 +127,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audio.addEventListener("loadedmetadata", onLoadedMetadata);
         audio.addEventListener("durationchange", onDurationChange);
         audio.addEventListener("ended", onEnded);
+
+        fetchDefaultTrack().then((track) => {
+            if (cancelled || !track) return;
+            setCurrentTrack(track);
+            audio.src = track.src;
+            audio.load();
+        });
 
         return () => {
             cancelled = true;
@@ -137,6 +179,7 @@ const togglePlay = useCallback(() => {
         audio.pause();
         setIsPlaying(false);
     } else {
+        if (!audio.src || audio.src === window.location.href) return;
         audio.play().catch((e) => console.error("Audio play error", e));
         setIsPlaying(true);
     }

@@ -349,6 +349,7 @@ export default function Home() {
                                         style={{
                                             borderRadius: '8px',
                                             objectFit: 'cover',
+                                            height: 'auto',
                                             filter: isDark ? 'none' : 'invert(1)'
                                         }}
                                     />
@@ -558,6 +559,7 @@ export default function Home() {
                                         style={{
                                             borderRadius: '8px',
                                             objectFit: 'cover',
+                                            height: 'auto',
                                             filter: isDark ? 'invert(1)' : 'none'
                                         }}
                                     />
