@@ -93,15 +93,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audio.addEventListener("durationchange", onDurationChange);
         audio.addEventListener("ended", onEnded);
 
-        fetchRandomTrack().then((track) => {
-            if (cancelled || !track) return;
-            setCurrentTrack(track);
-            setProgress(0);
-            setDuration(0);
-            audio.src = track.src;
-            audio.load();
-        });
-
         return () => {
             cancelled = true;
             audio.removeEventListener("timeupdate", onTimeUpdate);
