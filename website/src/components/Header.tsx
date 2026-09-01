@@ -20,10 +20,9 @@ const ISLAND_SPRING = { type: "spring", stiffness: 280, damping: 30 } as const;
 
 const MARQUEE_PERIOD_S = 10;
 const Marquee = ({ label }: { label: string }) => {
-    const delay = useMemo(() => -((Date.now() / 1000) % MARQUEE_PERIOD_S), []);
     return (
         <div style={{ flex: 1, overflow: 'hidden', marginLeft: 6, marginRight: 6, minWidth: 0, maskImage: 'linear-gradient(to right, transparent 0%, black 6px, black calc(100% - 6px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 6px, black calc(100% - 6px), transparent 100%)' }}>
-            <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: `marquee-scroll ${MARQUEE_PERIOD_S}s linear infinite`, animationDelay: `${delay}s`, width: 'fit-content' }}>
+            <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: `marquee-scroll ${MARQUEE_PERIOD_S}s linear infinite`, width: 'fit-content' }}>
                 {[0, 1].map((i) => (
                     <span key={i} style={{ color: '#d1d5db', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '-0.01em', paddingRight: '1.5em' }}>
                         {label}
