@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUISound } from '../hooks/use-ui-sound';
 
@@ -16,9 +16,35 @@ interface ProjectVideoProps {
 
 export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime = 0, endTime, iconColor = 'black' }: ProjectVideoProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [iconState, setIconState] = useState<'play' | 'pause' | null>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [iconState, setIconState] = useState<'play' | 'pause' | null>('play');
+    const wasPlayingRef = useRef(false);
     const { playClick } = useUISound();
+
+    // Auto-pause videos 
+    useEffect(() => {
+        const container = containerRef.current;
+        const video = videoRef.current;
+        if (!container || !video) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting && !video.paused) {
+                    // Video scrolled out of view while playing pause it
+                    wasPlayingRef.current = true;
+                    video.pause();
+                } else if (entry.isIntersecting && wasPlayingRef.current) {
+                    // Video scrolled back into view
+                    wasPlayingRef.current = false;
+                    video.play().catch(() => { });
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, []);
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -27,13 +53,8 @@ export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime =
 
         if (!videoRef.current) return;
 
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-        }
-
         if (videoRef.current.paused) {
-            // Play checks
+            wasPlayingRef.current = false;
             const playPromise = videoRef.current.play();
             if (playPromise !== undefined) {
                 playPromise.catch((error) => {
@@ -42,10 +63,9 @@ export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime =
             }
             setIconState(null);
         } else {
-            // Pause checks
             videoRef.current.pause();
             videoRef.current.currentTime = resetTime;
-            // Show play icon to and keep it visible
+            wasPlayingRef.current = false;
             setIconState('play');
         }
     };
@@ -56,31 +76,28 @@ export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime =
 
     return (
         <div
+            ref={containerRef}
             className={`relative w-full h-full cursor-pointer overflow-hidden bg-black flex items-center justify-center ${className || ''}`}
             onClick={handleClick}
-            style={{
-                // container takes up the space
-                // transforms) to the whole container
-                ...style
-            }}
+            style={style}
         >
             <video
                 ref={videoRef}
                 src={src + (startTime ? `#t=${startTime}` : '')}
-                autoPlay
                 loop={!endTime && !startTime}
                 muted
                 playsInline
+                preload="metadata"
                 className="w-full h-full object-cover pointer-events-none"
                 onTimeUpdate={(endTime || startTime) ? (e) => {
                     const video = e.currentTarget;
                     if (endTime && video.currentTime >= endTime) {
                         video.currentTime = startTime;
-                        video.play().catch(() => {});
+                        video.play().catch(() => { });
                     }
                     if (!endTime && startTime && video.duration && video.currentTime >= video.duration - 0.3) {
                         video.currentTime = startTime;
-                        video.play().catch(() => {});
+                        video.play().catch(() => { });
                     }
                 } : undefined}
             />
