@@ -263,16 +263,8 @@ export default function ProjectsPage() {
                                                             border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
                                                             flexShrink: 0
                                                         }}>
-                                                            <motion.div
-                                                                animate={{
-                                                                    scale: [1, 1.3, 1],
-                                                                    opacity: [1, 0.7, 1]
-                                                                }}
-                                                                transition={{
-                                                                    duration: 2,
-                                                                    repeat: Infinity,
-                                                                    ease: "easeInOut"
-                                                                }}
+                                                            <div
+                                                                className="status-dot-pulse"
                                                                 style={{
                                                                     width: '6px',
                                                                     height: '6px',

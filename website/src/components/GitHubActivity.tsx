@@ -291,7 +291,6 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                 </motion.div>
             </div>
 
-            {/* Contribution Graph with dramatic wave animation */}
             <div style={{
                 width: '100%',
                 overflowX: 'auto',
@@ -305,11 +304,31 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                     {weeks.map((week, weekIdx) => (
                         <div key={weekIdx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                             {week.map((day, dayIdx) => {
-                                // calculate wave delay - travels from left to right with sine wave effect
                                 const baseDelay = weekIdx * 0.05;
                                 const waveOffset = Math.sin(dayIdx * 0.8) * 0.03;
                                 const totalDelay = baseDelay + waveOffset;
+                                const color = getContributionColor(day.level);
 
+                                if (animationComplete) {
+                                    // After animation: plain div with CSS hover
+                                    return (
+                                        <div
+                                            key={day.date}
+                                            title={`${day.date}: ${day.count} contributions`}
+                                            className="contrib-cell"
+                                            style={{
+                                                width: '10px',
+                                                height: '10px',
+                                                borderRadius: '2px',
+                                                backgroundColor: color,
+                                                cursor: 'pointer',
+                                                '--cell-color': color,
+                                            } as React.CSSProperties}
+                                        />
+                                    );
+                                }
+
+                                // During animation: motion.div for the wave entrance
                                 return (
                                     <motion.div
                                         key={day.date}
@@ -321,7 +340,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                                         animate={{
                                             scale: [0, 1.3, 1],
                                             opacity: 1,
-                                            backgroundColor: getContributionColor(day.level),
+                                            backgroundColor: color,
                                         }}
                                         transition={{
                                             delay: totalDelay,
@@ -332,11 +351,6 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                                                 duration: 0.5,
                                             }
                                         }}
-                                        whileHover={animationComplete ? {
-                                            scale: 1.8,
-                                            zIndex: 10,
-                                            boxShadow: `0 0 12px ${getContributionColor(day.level)}`,
-                                        } : undefined}
                                         title={`${day.date}: ${day.count} contributions`}
                                         style={{
                                             width: '10px',

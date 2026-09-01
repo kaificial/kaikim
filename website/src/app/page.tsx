@@ -100,13 +100,13 @@ const LiveAge = () => {
         };
 
         updateAge();
-        const interval = setInterval(updateAge, 50);
+        const interval = setInterval(updateAge, 1000);
         return () => clearInterval(interval);
     }, []);
 
     return (
         <span style={{ fontVariantNumeric: 'tabular-nums', display: 'inline-block', minWidth: '100px' }}>
-            {mounted && age ? age : '19.3...'}
+            {mounted && age ? age : '19.7...'}
         </span>
     );
 };
@@ -252,7 +252,7 @@ export default function Home() {
 
                     {/* Paragraph and Socials */}
                     <div>
-                        <motion.p
+                        <motion.div
                             className="text-base sm:text-lg text-gray-800 dark:text-gray-300 text-left"
                             style={{ marginBottom: '12px', width: '100%', lineHeight: 1.6 }}
                             initial={{ opacity: 0 }}
@@ -311,7 +311,7 @@ export default function Home() {
                                     )}
                                 </AnimatePresence>
                             </span>{rt(', discovering new music, or playing racket sports.', 4)}
-                        </motion.p>
+                        </motion.div>
                     </div>
                 </div>
             </section>
@@ -349,6 +349,7 @@ export default function Home() {
                                         style={{
                                             borderRadius: '8px',
                                             objectFit: 'cover',
+                                            width: 'auto',
                                             height: 'auto',
                                             filter: isDark ? 'none' : 'invert(1)'
                                         }}
@@ -559,6 +560,7 @@ export default function Home() {
                                         style={{
                                             borderRadius: '8px',
                                             objectFit: 'cover',
+                                            width: 'auto',
                                             height: 'auto',
                                             filter: isDark ? 'invert(1)' : 'none'
                                         }}
@@ -793,9 +795,10 @@ export default function Home() {
             {/* Education Section */}
             <motion.section
                 style={{ marginTop: '32px' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.95, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-50px' }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
                 <h2 style={{
                     fontSize: '2rem',
@@ -825,8 +828,10 @@ export default function Home() {
                             alt="Queen's University Logo"
                             width={36}
                             height={36}
+                            priority
                             style={{
                                 objectFit: 'contain',
+                                width: 'auto',
                                 filter: 'none'
                             }}
                         />
@@ -861,9 +866,10 @@ export default function Home() {
             {/* Skills Section */}
             <motion.section
                 style={{ marginTop: '48px' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 2.1, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-50px' }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
                 <h2 style={{
                     fontSize: '2rem',
@@ -1074,9 +1080,10 @@ export default function Home() {
             {/* Featured Projects Section */}
             <motion.section
                 style={{ marginTop: '48px' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 2.25, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-50px' }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
                 <h2 style={{
                     fontSize: '2rem',
@@ -1149,16 +1156,8 @@ export default function Home() {
                                                 border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
                                                 flexShrink: 0
                                             }}>
-                                                <motion.div
-                                                    animate={{
-                                                        scale: [1, 1.3, 1],
-                                                        opacity: [1, 0.7, 1]
-                                                    }}
-                                                    transition={{
-                                                        duration: 2,
-                                                        repeat: Infinity,
-                                                        ease: "easeInOut"
-                                                    }}
+                                                <div
+                                                    className="status-dot-pulse"
                                                     style={{
                                                         width: '6px',
                                                         height: '6px',
