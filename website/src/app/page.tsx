@@ -96,11 +96,11 @@ const LiveAge = () => {
             const now = new Date().getTime();
             const yearInMs = 31556952000; // 365.2425 days
             const currentAge = (now - birthDate) / yearInMs;
-            setAge(currentAge.toFixed(10));
+            setAge(currentAge.toFixed(13));
         };
 
         updateAge();
-        const interval = setInterval(updateAge, 1000);
+        const interval = setInterval(updateAge, 50);
         return () => clearInterval(interval);
     }, []);
 
@@ -795,10 +795,9 @@ export default function Home() {
             {/* Education Section */}
             <motion.section
                 style={{ marginTop: '32px' }}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2.2, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
             >
                 <h2 style={{
                     fontSize: '2rem',
@@ -866,10 +865,9 @@ export default function Home() {
             {/* Skills Section */}
             <motion.section
                 style={{ marginTop: '48px' }}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2.6, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
             >
                 <h2 style={{
                     fontSize: '2rem',
