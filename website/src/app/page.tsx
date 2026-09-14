@@ -286,7 +286,7 @@ export default function Home() {
                                     )}
                                 </AnimatePresence>
                             </span>
-                            {rt(', ', 4.25)}
+                            {rt(",", 4.25)}
                             <span
                                 className="relative inline-block cursor-pointer"
                                 onMouseEnter={() => setHoveredIcon('shows')}
