@@ -847,7 +847,7 @@ export default function Home() {
                                 fontSize: '0.75rem',
                                 color: isDark ? '#9ca3af' : '#6b7280'
                             }}>
-                                {rt('Bachelor of Computing', 7.4)}
+                                {rt('Bachelor of Computing, Computer Science', 7.4)}
                             </p>
                         </div>
                     </div>
