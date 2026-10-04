@@ -512,32 +512,6 @@ export default function Home() {
                                     style={{ overflow: 'hidden' }}
                                 >
                                     <div style={{ marginLeft: '52px', marginTop: '0px', paddingBottom: '12px' }}>
-                                        <p style={{ fontSize: '0.875rem', color: isDark ? '#d1d5db' : '#4b5563', marginBottom: '12px' }}>
-                                            Engineered a fairness middleware that audits AI agent reasoning to intercept and correct biased tool-selection in real-time. By implementing an Iterative Validation Cycle using LangGraph and Small Language Models (SLMs), we built a scalable framework to ensure equitable outcomes in autonomous agentic workflows.
-                                        </p>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px', margin: '-4px' }}>
-                                            {['Python', 'LangGraph', 'CrewAI', 'MCP', 'DeepEval', 'Gemini', 'Ollama', 'FastAPI'].map((skill, index) => (
-                                                <motion.span
-                                                    key={index}
-                                                    whileHover={{ scale: 1.1, y: -2 }}
-                                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    style={{
-                                                        display: 'inline-block',
-                                                        cursor: 'default',
-                                                        padding: '4px 12px',
-                                                        backgroundColor: isDark ? 'rgba(38, 38, 38, 0.8)' : '#E5E7EB',
-                                                        color: isDark ? '#E5E7EB' : '#111827',
-                                                        border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`,
-                                                        borderRadius: '6px',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: '500'
-                                                    }}
-                                                >
-                                                    {skill}
-                                                </motion.span>
-                                            ))}
-                                        </div>
                                     </div>
                                 </motion.div>
                             )}
@@ -642,32 +616,6 @@ export default function Home() {
                                     style={{ overflow: 'hidden' }}
                                 >
                                     <div style={{ marginLeft: '52px', marginTop: '4px' }}>
-                                        <p style={{ fontSize: '0.875rem', color: isDark ? '#d1d5db' : '#4b5563', marginBottom: '12px' }}>
-                                            Built Iodetect, an integrated IoT diagnostic platform that automates the detection of iodine deficiency through a combination of embedded firmware and cloud based data visualization. The system uses an ESP32 driven hardware interface to process optical sensor data and synchronize results with a centralized Firebase repo, providing health officials with real time insights using a Next.js dashboard.
-                                        </p>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                            {['Next.js', 'TypeScript', 'Firebase', 'ESP32', 'C/C++', 'Tailwind CSS'].map((skill, index) => (
-                                                <motion.span
-                                                    key={index}
-                                                    whileHover={{ scale: 1.1, y: -2 }}
-                                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    style={{
-                                                        display: 'inline-block',
-                                                        cursor: 'default',
-                                                        padding: '4px 12px',
-                                                        backgroundColor: isDark ? 'rgba(38, 38, 38, 0.8)' : '#E5E7EB',
-                                                        color: isDark ? '#E5E7EB' : '#111827',
-                                                        border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`,
-                                                        borderRadius: '6px',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: '500'
-                                                    }}
-                                                >
-                                                    {skill}
-                                                </motion.span>
-                                            ))}
-                                        </div>
                                     </div>
                                 </motion.div>
                             )}
@@ -700,7 +648,7 @@ export default function Home() {
 
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
                                 <span className="experience-date" style={{ fontSize: '0.875rem', color: isDark ? '#9ca3af' : '#6b7280', whiteSpace: 'nowrap' }}>
-                                    {rt('May 2025 - Aug. 2025', 6.7)}
+                                    {rt('May 2024 - Aug. 2024', 6.7)}
                                 </span>
                                 <motion.button
                                     className="experience-btn"
@@ -745,16 +693,6 @@ export default function Home() {
                             {expandedItems['zeen'] && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
                                     <div style={{ marginLeft: '52px', marginTop: '0px', paddingBottom: '12px' }}>
-                                        <p style={{ fontSize: '0.875rem', color: isDark ? '#d1d5db' : '#4b5563', marginBottom: '12px' }}>
-                                            Built and shipped features across the full stack for Zeen&apos;s B2B SaaS platform. Owned a redesign of the document parsing pipeline, reducing processing latency by 40%. Contributed to a real-time collaboration layer using WebSockets, and helped migrate a legacy REST API surface to a GraphQL schema shared across web and mobile clients.
-                                        </p>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px', margin: '-4px' }}>
-                                            {['React', 'TypeScript', 'Node.js', 'GraphQL', 'PostgreSQL', 'Redis', 'WebSockets', 'AWS S3', 'Docker', 'REST APIs'].map((skill, index) => (
-                                                <motion.span key={index} whileHover={{ scale: 1.1, y: -2 }} transition={{ type: "spring", stiffness: 400, damping: 10 }} whileTap={{ scale: 0.95 }} style={{ display: 'inline-block', cursor: 'default', padding: '4px 12px', backgroundColor: isDark ? 'rgba(38, 38, 38, 0.8)' : '#E5E7EB', color: isDark ? '#E5E7EB' : '#111827', border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`, borderRadius: '6px', fontSize: '0.75rem', fontWeight: '500' }}>
-                                                    {skill}
-                                                </motion.span>
-                                            ))}
-                                        </div>
                                     </div>
                                 </motion.div>
                             )}
