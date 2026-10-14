@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUISound } from '../hooks/use-ui-sound';
 
@@ -11,17 +11,41 @@ interface ProjectVideoProps {
     resetTime?: number;
     startTime?: number;
     endTime?: number;
-    iconColor?: 'white' | 'black';
+    iconColor?: 'white' | 'black' | 'glass';
+    /** Loop the reel automatically whenever it is on screen. */
+    autoLoop?: boolean;
+    /** Thin progress line along the bottom edge. */
+    showProgress?: boolean;
 }
 
-export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime = 0, endTime, iconColor = 'black' }: ProjectVideoProps) => {
+export const ProjectVideo = ({
+    src,
+    style,
+    className,
+    resetTime = 0,
+    startTime = 0,
+    endTime,
+    iconColor = 'glass',
+    autoLoop = false,
+    showProgress = false,
+}: ProjectVideoProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [iconState, setIconState] = useState<'play' | 'pause' | null>('play');
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
+    // Set when the viewer clicks to pause, so auto-loop won't restart it.
+    const pausedByUserRef = useRef(false);
     const wasPlayingRef = useRef(false);
     const { playClick } = useUISound();
 
-    // Auto-pause videos 
+    const play = useCallback(() => {
+        const video = videoRef.current;
+        if (!video) return;
+        video.play().then(() => setIsPlaying(true)).catch(() => { });
+    }, []);
+
+    // Only play while on screen: keeps the reels looping without pulling
+    // every video down at once.
     useEffect(() => {
         const container = containerRef.current;
         const video = videoRef.current;
@@ -29,14 +53,17 @@ export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime =
 
         const observer = new IntersectionObserver(
             ([entry]) => {
-                if (!entry.isIntersecting && !video.paused) {
-                    // Video scrolled out of view while playing pause it
+                if (entry.isIntersecting) {
+                    if (autoLoop) {
+                        if (!pausedByUserRef.current) play();
+                    } else if (wasPlayingRef.current) {
+                        wasPlayingRef.current = false;
+                        play();
+                    }
+                } else if (!video.paused) {
                     wasPlayingRef.current = true;
                     video.pause();
-                } else if (entry.isIntersecting && wasPlayingRef.current) {
-                    // Video scrolled back into view
-                    wasPlayingRef.current = false;
-                    video.play().catch(() => { });
+                    setIsPlaying(false);
                 }
             },
             { threshold: 0.1 }
@@ -44,35 +71,30 @@ export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime =
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, []);
+    }, [autoLoop, play]);
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         playClick();
 
-        if (!videoRef.current) return;
+        const video = videoRef.current;
+        if (!video) return;
 
-        if (videoRef.current.paused) {
+        if (video.paused) {
+            pausedByUserRef.current = false;
             wasPlayingRef.current = false;
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.catch((error) => {
-                    console.error("Video play prevented:", error);
-                });
-            }
-            setIconState(null);
+            play();
         } else {
-            videoRef.current.pause();
-            videoRef.current.currentTime = resetTime;
+            pausedByUserRef.current = true;
             wasPlayingRef.current = false;
-            setIconState('play');
+            video.pause();
+            if (!autoLoop) video.currentTime = startTime || resetTime;
+            setIsPlaying(false);
         }
     };
 
-    const iconBgClass = iconColor === 'white'
-        ? "bg-zinc-900/90 text-white"
-        : "bg-white/90 text-black";
+    const iconFill = iconColor === 'black' ? 'black' : 'white';
 
     return (
         <div
@@ -84,62 +106,65 @@ export const ProjectVideo = ({ src, style, className, resetTime = 0, startTime =
             <video
                 ref={videoRef}
                 src={src + (startTime ? `#t=${startTime}` : '')}
-                loop={!endTime && !startTime}
+                loop={!endTime}
                 muted
                 playsInline
                 preload="metadata"
                 className="w-full h-full object-cover pointer-events-none"
-                onTimeUpdate={(endTime || startTime) ? (e) => {
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onTimeUpdate={(e) => {
                     const video = e.currentTarget;
+
+                    if (showProgress && video.duration) {
+                        const from = startTime;
+                        const to = endTime ?? video.duration;
+                        setProgress(Math.min(100, Math.max(0, ((video.currentTime - from) / (to - from)) * 100)));
+                    }
+
+                    // Native loop restarts at 0, so trimmed reels rewind by hand.
                     if (endTime && video.currentTime >= endTime) {
                         video.currentTime = startTime;
-                        video.play().catch(() => { });
-                    }
-                    if (!endTime && startTime && video.duration && video.currentTime >= video.duration - 0.3) {
+                        play();
+                    } else if (startTime && video.duration && video.currentTime >= video.duration - 0.3) {
                         video.currentTime = startTime;
-                        video.play().catch(() => { });
+                        play();
                     }
-                } : undefined}
+                }}
             />
 
+            {/* Bare play glyph — no badge behind it */}
             <AnimatePresence>
-                {iconState && (
+                {!isPlaying && (
                     <motion.div
-                        key={iconState}
-                        initial={{ opacity: 0, scale: 0.5 }}
+                        initial={{ opacity: 0, scale: 0.7 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
                     >
-                        <div className={`${iconBgClass} rounded-full p-5 backdrop-blur-md shadow-xl`}>
-                            {iconState === 'pause' ? (
-                                <svg
-                                    width="48"
-                                    height="48"
-                                    viewBox="0 0 24 24"
-                                    fill={iconColor === 'white' ? 'white' : 'black'}
-                                    stroke={iconColor === 'white' ? 'white' : 'black'}
-                                    strokeWidth="0"
-                                >
-                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                                </svg>
-                            ) : (
-                                <svg
-                                    width="48"
-                                    height="48"
-                                    viewBox="0 0 24 24"
-                                    fill={iconColor === 'white' ? 'white' : 'black'}
-                                    stroke={iconColor === 'white' ? 'white' : 'black'}
-                                    strokeWidth="0"
-                                >
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
-                            )}
-                        </div>
+                        <svg
+                            width="54"
+                            height="54"
+                            viewBox="0 0 24 24"
+                            fill={iconFill}
+                            strokeWidth="0"
+                            style={{ filter: 'drop-shadow(0 2px 10px rgba(0, 0, 0, 0.65))' }}
+                        >
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {showProgress && (
+                <div className="absolute bottom-0 left-0 right-0 z-20 h-[3px] bg-white/10 pointer-events-none">
+                    <div
+                        className="h-full bg-[#2563eb]"
+                        style={{ width: `${progress}%`, transition: 'width 0.15s linear' }}
+                    />
+                </div>
+            )}
         </div>
     );
 };

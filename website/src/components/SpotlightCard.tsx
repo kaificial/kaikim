@@ -7,11 +7,22 @@ interface SpotlightCardProps {
     children: React.ReactNode;
     isDark: boolean;
     noPadding?: boolean;
+    /** The blue cursor-tracking glow. Off for cards that carry their own media. */
+    spotlight?: boolean;
 }
 
-export const SpotlightCard = ({ children, isDark, noPadding = false }: SpotlightCardProps) => {
+export const SpotlightCard = ({ children, isDark, noPadding = false, spotlight = true }: SpotlightCardProps) => {
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+
+    // Hook has to run unconditionally, so build the gradient either way.
+    const glow = useMotionTemplate`
+        radial-gradient(
+            350px circle at ${mouseX}px ${mouseY}px,
+            rgba(37, 99, 235, 0.15),
+            transparent 80%
+        )
+    `;
 
     function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
         const { left, top } = currentTarget.getBoundingClientRect();
@@ -43,19 +54,12 @@ export const SpotlightCard = ({ children, isDark, noPadding = false }: Spotlight
                 flexDirection: 'column'
             }}
         >
-            <motion.div
-                className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100"
-                style={{
-                    background: useMotionTemplate`
-                        radial-gradient(
-                            350px circle at ${mouseX}px ${mouseY}px,
-                            rgba(37, 99, 235, 0.15),
-                            transparent 80%
-                        )
-                    `,
-                    transition: 'opacity 0.3s'
-                }}
-            />
+            {spotlight && (
+                <motion.div
+                    className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100"
+                    style={{ background: glow, transition: 'opacity 0.3s' }}
+                />
+            )}
             <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
                 {children}
             </div>
