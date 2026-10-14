@@ -886,7 +886,7 @@ body.cursor-grid-active .cursor-bloom {
 
 }
 
-/* Custom paper-airplane cursor */
+/* Custom sleek arrow cursor */
 body.custom-cursor-active,
 body.custom-cursor-active * {
     cursor: none !important;
@@ -906,7 +906,7 @@ body.custom-cursor-active.custom-cursor-text * {
     pointer-events: none;
     z-index: 9999;
     opacity: 0;
-    transition: opacity 0.18s ease;
+    transition: opacity 0.15s ease;
 }
 
 body.custom-cursor-text .paper-cursor-root {
@@ -914,35 +914,104 @@ body.custom-cursor-text .paper-cursor-root {
 }
 
 .paper-cursor-plane {
-    // centered on the root's position (the real mouse coordinates), so it
-    // just spins in place using the default center transform-origin
+    // Anchored directly at (0,0) so the tip stays locked to the hardware mouse
     position: absolute;
-    top: -15px;
-    left: -19px;
-    width: 38px;
-    height: 30px;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
     will-change: transform;
-    filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.25));
+    pointer-events: none;
 }
 
 .paper-cursor-plane svg {
-    display: block;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    top: -9px;
+    left: -21px;
+    width: 24px;
+    height: 18px;
     overflow: visible;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+    transition: filter 0.2s ease;
 }
 
-.paper-cursor-body {
-    fill: #000000;
+.paper-cursor-shape {
+    transform-origin: 0 0;
+}
+
+/* Crisp perimeter outline for high-contrast visibility against light & dark backgrounds */
+.cursor-rim {
+    fill: #090d16;
     stroke: #ffffff;
-    stroke-width: 1.5;
+    stroke-width: 1.25;
     stroke-linejoin: round;
+    stroke-linecap: round;
     paint-order: stroke fill;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+/* Faceted metallic shading */
+.cursor-facet-top {
+    fill: url(#cursor-facet-left-grad);
     transition: fill 0.2s ease;
 }
 
-.paper-cursor-root.paper-cursor-hover .paper-cursor-body {
-    fill: var(--accent-blue);
+.cursor-facet-bottom {
+    fill: url(#cursor-facet-right-grad);
+    transition: fill 0.2s ease;
+}
+
+/* Fine central spine ridge */
+.cursor-spine {
+    stroke: rgba(255, 255, 255, 0.5);
+    stroke-width: 0.8;
+    stroke-linecap: round;
+    transition: stroke 0.2s ease;
+}
+
+/* Core accent conduit */
+.cursor-core {
+    stroke: var(--accent-blue);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    opacity: 0.9;
+    transition: stroke 0.2s ease, opacity 0.2s ease;
+}
+
+/* Hover state: illuminated electric blue glow and reactive flare */
+.paper-cursor-root.paper-cursor-hover .paper-cursor-plane svg {
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.75)) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+}
+
+.paper-cursor-root.paper-cursor-hover .cursor-rim {
+    stroke: #ffffff;
+}
+
+.paper-cursor-root.paper-cursor-hover .cursor-facet-top {
+    fill: #3b82f6;
+}
+
+.paper-cursor-root.paper-cursor-hover .cursor-facet-bottom {
+    fill: #2563eb;
+}
+
+.paper-cursor-root.paper-cursor-hover .cursor-spine {
+    stroke: #e0f2fe;
+}
+
+.paper-cursor-root.paper-cursor-hover .cursor-core {
+    stroke: #93c5fd;
+    opacity: 1;
+}
+
+/* Active / click state */
+.paper-cursor-root.paper-cursor-down .cursor-facet-top {
+    fill: #1d4ed8;
+}
+
+.paper-cursor-root.paper-cursor-down .cursor-facet-bottom {
+    fill: #1e40af;
 }
 
 @media (pointer: coarse) {
