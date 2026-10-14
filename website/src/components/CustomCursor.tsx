@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 const TAU = Math.PI * 2;
+const REST_HEADING = -Math.PI * 0.7;
 
 // smallest angle you'd need to turn to go from one direction to another, in radians
 function angleDelta(from: number, to: number) {
@@ -29,19 +30,20 @@ export default function CustomCursor() {
 
         const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         const target = { ...pos };
+        const prevTarget = { ...pos };
         const velocity = { x: 0, y: 0 };
 
-        let heading = 0; // radians, 0 means the nose points right
-        let headingKnown = false;
-        let prevHeading = 0;
+        let heading = REST_HEADING;
+        let prevHeading = REST_HEADING;
         let roll = 0;
         let lastTime = performance.now();
         let visible = false;
         let overText = false;
         let overInteractive = false;
         let pressed = false;
-        let stateScale = 1; // eases toward the hover/press size each frame
+        let stateScale = 1; // eases toward hover/press scale
         let lastTarget: EventTarget | null = null;
+        let idleTimer = 0;
         let raf = 0;
 
         const show = () => {
@@ -57,10 +59,6 @@ export default function CustomCursor() {
             }
         };
 
-        // stuff a normal cursor would turn into a pointer over. this codebase
-        // uses inline style={{ cursor: 'pointer' }} and tailwind's cursor-pointer
-        // class a lot, and since we hide the real cursor we can't read the
-        // computed style, so we just check for those patterns by hand
         const INTERACTIVE =
             'a, button, [role="button"], select, summary, label, .cursor-pointer, ' +
             '[style*="cursor: pointer"], [style*="cursor:pointer"], [onclick]';
@@ -83,7 +81,13 @@ export default function CustomCursor() {
         const onMove = (e: PointerEvent) => {
             target.x = e.clientX;
             target.y = e.clientY;
-            show();
+            if (!visible) {
+                pos.x = target.x;
+                pos.y = target.y;
+                prevTarget.x = target.x;
+                prevTarget.y = target.y;
+                show();
+            }
 
             if (e.target !== lastTarget) {
                 lastTarget = e.target;
@@ -114,50 +118,46 @@ export default function CustomCursor() {
             const dt = Math.min((now - lastTime) / 1000, 0.05) || 0.016;
             lastTime = now;
 
-            // follow the real cursor, with a bit of smoothing so it doesn't teleport
-            const posFactor = 1 - Math.exp(-dt * 22);
-            const dx = target.x - pos.x;
-            const dy = target.y - pos.y;
-            pos.x += dx * posFactor;
-            pos.y += dy * posFactor;
+            pos.x = target.x;
+            pos.y = target.y;
 
-            // smooth the velocity too, so tiny jitters don't spin the nose around
-            const velFactor = 1 - Math.exp(-dt * 14);
-            velocity.x += (dx - velocity.x) * velFactor;
-            velocity.y += (dy - velocity.y) * velFactor;
+            const moveX = target.x - prevTarget.x;
+            const moveY = target.y - prevTarget.y;
+            prevTarget.x = target.x;
+            prevTarget.y = target.y;
+
+            const velFactor = 1 - Math.exp(-dt * 20);
+            velocity.x += (moveX - velocity.x) * velFactor;
+            velocity.y += (moveY - velocity.y) * velFactor;
 
             const speed = Math.hypot(velocity.x, velocity.y);
 
-            if (speed > 0.12) {
+            if (speed > 0.35) {
+                idleTimer = 0;
                 const desired = Math.atan2(velocity.y, velocity.x);
-                if (!headingKnown) {
-                    heading = desired;
-                    prevHeading = desired;
-                    headingKnown = true;
-                } else {
-                    const headingFactor = 1 - Math.exp(-dt * 16);
-                    heading += angleDelta(heading, desired) * headingFactor;
+                const headingFactor = 1 - Math.exp(-dt * 22);
+                heading += angleDelta(heading, desired) * headingFactor;
+            } else {
+                idleTimer += dt;
+                if (idleTimer > 0.28 || overInteractive) {
+                    const settleSpeed = overInteractive ? 14 : 8;
+                    const settleFactor = 1 - Math.exp(-dt * settleSpeed);
+                    heading += angleDelta(heading, REST_HEADING) * settleFactor;
                 }
             }
-            // if the mouse stops, just keep pointing the same way as before
 
-            // tilt into turns based on how fast we're turning
-            const turnRate = angleDelta(prevHeading, heading) / dt; // rad/s
+            // Tilt/bank into turns
+            const turnRate = angleDelta(prevHeading, heading) / dt;
             prevHeading = heading;
-            const targetRollDeg = Math.max(-30, Math.min(30, (turnRate * 180) / Math.PI * -0.16));
-            const rollFactor = 1 - Math.exp(-dt * 9);
+            const targetRollDeg = Math.max(-26, Math.min(26, (turnRate * 180) / Math.PI * -0.14));
+            const rollFactor = 1 - Math.exp(-dt * 12);
             roll += (targetRollDeg - roll) * rollFactor;
 
-            // grow a little on hover, squash down on click, same idea as a
-            // normal cursor switching to its pointer or active look
-            const stateTarget = pressed ? 0.8 : overInteractive ? 1.18 : 1;
-            stateScale += (stateTarget - stateScale) * (1 - Math.exp(-dt * 18));
+            // Hover expansion and click compression
+            const stateTarget = pressed ? 0.86 : overInteractive ? 1.15 : 1;
+            stateScale += (stateTarget - stateScale) * (1 - Math.exp(-dt * 20));
 
-            const scale = Math.min(1.12, 1 + speed * 0.01) * stateScale;
-
-            // using a plain 2D transform here. the 3D rotateX/preserve-3d/perspective
-            // setup wasn't rendering in some browsers, so we fake the bank by
-            // squashing the plane vertically instead
+            const scale = Math.min(1.18, 1 + speed * 0.008) * stateScale;
             const bank = Math.cos((roll * Math.PI) / 180);
 
             root.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
@@ -181,12 +181,51 @@ export default function CustomCursor() {
 
     return (
         <div ref={rootRef} className="paper-cursor-root" aria-hidden="true">
-            {/* the plane sits centered on the mouse and just spins in place as the heading changes */}
             <div ref={planeRef} className="paper-cursor-plane">
-                <svg viewBox="-19 -15 38 30">
-                    {/* two triangles meeting at the nose, with a notch cut into the tail */}
-                    <polygon className="paper-cursor-body" points="17,0 -17,-13 -10,0" />
-                    <polygon className="paper-cursor-body" points="17,0 -10,0 -17,13" />
+                <svg viewBox="-21 -9 24 18" width="24" height="18">
+                    <defs>
+                        <linearGradient id="cursor-facet-left-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#0f172a" />
+                            <stop offset="100%" stopColor="#020617" />
+                        </linearGradient>
+                        <linearGradient id="cursor-facet-right-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#1e293b" />
+                            <stop offset="100%" stopColor="#0f172a" />
+                        </linearGradient>
+                    </defs>
+                    <g className="paper-cursor-shape">
+                        {/* Outer perimeter outline*/}
+                        <path
+                            className="cursor-rim"
+                            d="M 0,0 L -18,-6.5 L -14,-2 L -12.5,0 L -14,2 L -18,6.5 Z"
+                        />
+                        {/* Port (Upper) Wing Facet */}
+                        <polygon
+                            className="cursor-facet cursor-facet-top"
+                            points="0,0 -18,-6.5 -14,-2 -12.5,0"
+                        />
+                        {/* Starboard (Lower) Wing Facet */}
+                        <polygon
+                            className="cursor-facet cursor-facet-bottom"
+                            points="0,0 -12.5,0 -14,2 -18,6.5"
+                        />
+                        {/* Precision Center Spine Line */}
+                        <line
+                            className="cursor-spine"
+                            x1="0"
+                            y1="0"
+                            x2="-12.5"
+                            y2="0"
+                        />
+                        {/* Micro Accent */}
+                        <line
+                            className="cursor-core"
+                            x1="-13.5"
+                            y1="-1.6"
+                            x2="-13.5"
+                            y2="1.6"
+                        />
+                    </g>
                 </svg>
             </div>
         </div>
