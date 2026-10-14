@@ -12,32 +12,32 @@ export interface Project {
     github?: string;
     demo?: string;
     longDescription?: string;
+    /** Playback trim for the preview reel (seconds). */
+    startTime?: number;
+    endTime?: number;
+    resetTime?: number;
 }
 
 export const projects: Project[] = [
     {
-        id: 'macrodata-refinement',
-        title: 'Macrodata Refinement',
-        description: 'A Severance-inspired text analytics game where users sort disguised text data into AI-generated semantic clusters.',
-        tags: ['Python', 'UMAP', 'scikit-learn (KMeans)', 'NumPy', 'Docker'],
+        id: 'marrow',
+        title: 'Marrow',
+        description: 'Marrow reports outcome. It tracks every line in your repository and measures how long it survives, with human-written code as the control group.',
+        tags: ['Rust', 'Python'],
         status: 'Building',
         url: '',
-        video: '/assets/Severance.mp4',
-        longDescription: `Macrodata Refinement is a real text analytics tool disguised as the terminal data-sorting UI from one of my favourite shows of all time, Severance. Users can feed in real text data (reviews, tickets, survey responses, etc.) and "refine" it by dragging the numbers (disguised text data) into bins. Each bin is actually a semantic cluster with an AI-generated label, summary, and sentiment profile. Essentially making a text-analytics task feel like a game. Just a fun demo of NLP clustering. - Kier
-
-<div style="text-align: center; margin-top: 40px; opacity: 0.6;">Last Edited: July 7, 2026</div>`,
+        video: '/assets/marrow.mp4',
     },
-
     {
         id: 'clairo',
         title: 'Clairo',
         description: 'AI-powered assistant to help you understand medical terminology, records, and reports with clarity.',
         tags: ['Next.js', 'TypeScript', 'WebLLM', 'Gemini', 'Transformers.js', 'IndexedDB', 'Framer Motion'],
-        status: 'Live',
+        status: 'Building',
         url: '',
-        video: '/assets/ClairoMedicalDemo.mp4',
+        video: '/assets/clairo.mp4',
         github: 'https://github.com/kaificial/clairo',
-        demo: 'https://clairomedical.vercel.app/',
+        demo: 'https://clairo.vercel.app',
         longDescription: `
 **Clairo is a web app that helps people understand their medical reports with more clarity.**
 Clairo solves this by letting you:
@@ -507,7 +507,7 @@ The main thread right now sends the board state as a FEN string and gets the res
         url: 'rooke.vercel.app',
         github: 'https://github.com/kaificial/rooke',
         demo: 'https://rooke.vercel.app',
-        video: '/assets/RookeDemo.mp4'
+        video: '/assets/rooke.mp4'
     },
     {
         id: 'texify',
@@ -518,7 +518,7 @@ The main thread right now sends the board state as a FEN string and gets the res
         url: 'https://scribelatex.vercel.app/',
         github: 'https://github.com/kaificial/texify',
         demo: 'https://scribelatex.vercel.app/',
-        video: '/assets/TeXify.mp4',
+        video: '/scribe.mp4',
         longDescription: ``,
     },
     {
@@ -531,5 +531,6 @@ The main thread right now sends the board state as a FEN string and gets the res
         github: 'https://github.com/kaificial/KaiKim',
         demo: 'https://kaikim.ca',
         video: '/assets/PersonalPortfolio.mp4',
+        resetTime: 2,
     },
 ];
