@@ -7,7 +7,7 @@ import { CSSProperties, ReactNode, useState, useEffect } from 'react';
 import { useTheme } from '../components/ThemeContext';
 import { useUISound } from '../hooks/use-ui-sound';
 import { SpotlightCard } from '../components/SpotlightCard';
-import { projects } from '../data/projects';
+import { projects, type Project } from '../data/projects';
 import { ProjectDescription } from '../components/ProjectDescription';
 import Webring from '../components/Webring';
 import { motion, AnimatePresence, useScroll, useSpring, useMotionValue, useMotionTemplate } from 'framer-motion';
@@ -45,16 +45,270 @@ const getSkillLogo = (skill: string, isDark: boolean) => {
     return `https://cdn.simpleicons.org/${slug}/${color}`;
 };
 
-const ProjectTitle = ({ project, isDark }: { project: any, isDark: boolean }) => (
-    <h3 style={{
-        fontSize: '1.375rem',
-        fontWeight: 'bold',
-        color: isDark ? 'white' : '#1c1917',
-        margin: 0
-    }}>
-        <TextReveal delay={0.22}>{project.title}</TextReveal>
-    </h3>
-);
+const REVEAL_BASE = 0.15;
+const REVEAL_STEP = 0.08;
+const revealSlot = (slot: number) => REVEAL_BASE + slot * REVEAL_STEP;
+
+const STATUS_DOT: Record<string, string> = {
+    Live: '#3b82f6',
+    Building: '#eab308',
+    Archived: '#9ca3af'
+};
+
+const MAX_VISIBLE_TAGS = 5;
+
+const ProjectCard = ({ project, index, isDark }: { project: Project, index: number, isDark: boolean }) => {
+    const [showAllTags, setShowAllTags] = useState(false);
+    const { playClick } = useUISound();
+
+    // Cards reveal in sequence rather than all at once.
+    const base = 8.6 + index * 0.5;
+    const slot = (offset: number) => revealSlot(base + offset);
+
+    const visibleTags = showAllTags ? project.tags : project.tags.slice(0, MAX_VISIBLE_TAGS);
+    const hiddenTagCount = project.tags.length - visibleTags.length;
+
+    const border = isDark ? '#374151' : '#e5e7eb';
+    const mutedText = isDark ? '#9ca3af' : '#6b7280';
+
+    return (
+        <SpotlightCard isDark={isDark} noPadding spotlight={false}>
+            {/* Preview reel spans the full card width so the UI in the demo is legible */}
+            <div style={{
+                position: 'relative',
+                width: '100%',
+                aspectRatio: '2 / 1',
+                overflow: 'hidden',
+                borderBottom: `1px solid ${border}`,
+                backgroundColor: project.solidColor || (isDark ? '#0a0a0a' : '#f8f9fa')
+            }}>
+                {project.video ? (
+                    <ProjectVideo
+                        src={project.video}
+                        resetTime={project.resetTime ?? 0}
+                        startTime={project.startTime ?? 0}
+                        endTime={project.endTime}
+                        autoLoop
+                        showProgress
+                    />
+                ) : project.image ? (
+                    <Image
+                        src={project.image}
+                        alt={`${project.title} preview`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 700px"
+                        style={{ objectFit: 'cover' }}
+                    />
+                ) : (
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '2.5rem',
+                        opacity: 0.3
+                    }}>{project.icon}</div>
+                )}
+
+                {/* Status floats over the reel so it no longer competes with the title */}
+                <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    zIndex: 25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(10, 10, 10, 0.62)',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    pointerEvents: 'none'
+                }}>
+                    <div
+                        className="status-dot-pulse"
+                        style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: STATUS_DOT[project.status] || '#9ca3af'
+                        }}
+                    />
+                    <span style={{
+                        color: '#f3f4f6',
+                        fontSize: '0.6875rem',
+                        fontWeight: 500,
+                        letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap'
+                    }}>{project.status}</span>
+                </div>
+            </div>
+
+            {/* Details */}
+            <div style={{
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                flex: 1
+            }}>
+                <h3 style={{
+                    fontSize: '1.375rem',
+                    fontWeight: 'bold',
+                    color: isDark ? 'white' : '#1c1917',
+                    margin: 0,
+                    lineHeight: 1.2
+                }}>
+                    <TextReveal delay={slot(0)}>{project.title}</TextReveal>
+                </h3>
+
+                <p style={{
+                    fontSize: '0.8125rem',
+                    color: mutedText,
+                    lineHeight: 1.55,
+                    margin: 0
+                }}>
+                    <TextReveal delay={slot(0.1)}>{project.description}</TextReveal>
+                </p>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                    {visibleTags.map((tech, i) => (
+                        <motion.span
+                            key={tech}
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                            style={{
+                                display: 'inline-block',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                backgroundColor: isDark ? 'rgba(55, 65, 81, 0.5)' : '#f3f4f6',
+                                color: isDark ? '#d1d5db' : '#374151',
+                                fontSize: '0.7rem',
+                                fontWeight: 500,
+                                border: `1px solid ${border}`
+                            }}
+                        >
+                            <TextReveal delay={slot(0.2 + i * 0.04)}>{tech}</TextReveal>
+                        </motion.span>
+                    ))}
+
+                    {/* Long stacks stay collapsed so card heights stay predictable */}
+                    {(hiddenTagCount > 0 || showAllTags) && (
+                        <button
+                            type="button"
+                            onClick={() => { playClick(); setShowAllTags(v => !v); }}
+                            aria-expanded={showAllTags}
+                            style={{
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                backgroundColor: 'transparent',
+                                color: mutedText,
+                                fontSize: '0.7rem',
+                                fontWeight: 500,
+                                border: `1px dashed ${border}`,
+                                cursor: 'pointer',
+                                fontFamily: 'inherit',
+                                transition: 'color 0.2s ease, border-color 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#2563eb'; e.currentTarget.style.borderColor = '#2563eb'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = mutedText; e.currentTarget.style.borderColor = border; }}
+                        >
+                            {showAllTags ? 'show less' : `+${hiddenTagCount} more`}
+                        </button>
+                    )}
+                </div>
+
+                {(project.demo || project.github) && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    marginTop: 'auto',
+                    paddingTop: '12px',
+                    borderTop: `1px solid ${border}`
+                }}>
+                    {/* Only render the links a project actually has */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {project.demo && (
+                            <motion.a
+                                href={project.demo}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Open the ${project.title} live demo`}
+                                whileHover={{
+                                    scale: 1.05,
+                                    boxShadow: isDark
+                                        ? '0 0 20px rgba(59, 130, 246, 0.55), 0 0 40px rgba(59, 130, 246, 0.25)'
+                                        : '0 0 20px rgba(37, 99, 235, 0.4), 0 0 40px rgba(37, 99, 235, 0.18)'
+                                }}
+                                whileTap={{ scale: 0.98 }}
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                                    color: isDark ? '#e5e7eb' : '#1f2937',
+                                    border: `1px solid ${isDark ? '#374151' : '#d1d5db'}`,
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 500,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    textDecoration: 'none'
+                                }}
+                            >
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                <TextReveal delay={slot(0.5)}>Demo</TextReveal>
+                            </motion.a>
+                        )}
+
+                        {project.github && (
+                            <motion.a
+                                href={project.github}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`View the ${project.title} source on GitHub`}
+                                whileHover={{
+                                    scale: 1.05,
+                                    boxShadow: isDark
+                                        ? '0 0 20px rgba(59, 130, 246, 0.55), 0 0 40px rgba(59, 130, 246, 0.25)'
+                                        : '0 0 20px rgba(37, 99, 235, 0.4), 0 0 40px rgba(37, 99, 235, 0.18)'
+                                }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ duration: 0.2 }}
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: isDark ? '#374151' : '#f3f4f6',
+                                    color: isDark ? 'white' : '#1f2937',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 500,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    textDecoration: 'none',
+                                    border: `1px solid ${isDark ? '#374151' : '#d1d5db'}`
+                                }}
+                            >
+                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                                </svg>
+                                <TextReveal delay={slot(0.55)}>GitHub</TextReveal>
+                            </motion.a>
+                        )}
+                    </div>
+                </div>
+                )}
+            </div>
+        </SpotlightCard>
+    );
+};
 
 type TextRevealProps = {
     children: ReactNode;
@@ -1021,221 +1275,37 @@ export default function Home() {
                 viewport={{ once: true, margin: '-50px' }}
                 transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-                <h2 style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    marginBottom: '24px',
-                    color: isDark ? 'white' : '#1c1917'
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    marginBottom: '20px'
                 }}>
-                    {rt('Featured Projects', 8)}
-                </h2>
+                    <h2 style={{
+                        fontSize: '2rem',
+                        fontWeight: 'bold',
+                        margin: 0,
+                        color: isDark ? 'white' : '#1c1917'
+                    }}>
+                        {rt('Featured Projects', 8)}
+                    </h2>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        color: isDark ? '#6b7280' : '#9ca3af',
+                        whiteSpace: 'nowrap'
+                    }}>
+                        {rt('tap a preview to pause', 8.2)}
+                    </span>
+                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-                    {projects.filter(p => p.id !== 'portfolio').map((project) => (
-                        <SpotlightCard key={project.id} isDark={isDark}>
-                            <div className="grid grid-cols-1 sm:grid-cols-[300px_1fr] gap-[20px]">
-                                {/* Left: Preview Image/Video */}
-                                <div style={{
-                                    borderRadius: '8px',
-                                    overflow: 'hidden',
-                                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                                    backgroundColor: project.solidColor || (isDark ? '#171717' : '#f8f9fa'),
-                                    aspectRatio: project.id === 'rooke' ? '1512/738' :
-                                        project.id === 'texify' ? '1996/1080' :
-                                            project.id === 'portfolio' ? '1500/742' :
-                                                project.id === 'scribl' ? '2220/1080' :
-                                                    project.id === 'clairo' ? '1498/744' :
-                                                        project.id === 'macrodata-refinement' ? 'auto' : '16/10',
-                                    alignSelf: 'start',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    position: 'relative'
-                                }}>
-                                    {project.video ? (
-                                        <ProjectVideo
-                                            src={project.video}
-                                            resetTime={project.id === 'portfolio' ? 2 : 0}
-                                            startTime={project.id === 'macrodata-refinement' ? 6 : 0}
-                                            endTime={project.id === 'macrodata-refinement' ? 33 : undefined}
-                                            iconColor={project.id === 'rooke' || project.id === 'macrodata-refinement' ? 'white' : 'black'}
-                                            style={{
-                                                transform: project.id === 'portfolio' ? 'scale(1.15)' : 'none'
-                                            }}
-                                        />
-                                    ) : project.image ? (
-                                        <Image
-                                            src={project.image}
-                                            alt={project.title}
-                                            fill
-                                            sizes="(max-width: 640px) 90vw, 420px"
-                                            style={{ objectFit: 'cover' }}
-                                        />
-                                    ) : (
-                                        <span style={{ fontSize: '2.5rem', opacity: 0.3 }}>{project.icon}</span>
-                                    )}
-                                </div>
-
-                                {/* Right: Content */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    {/* Header with title and status */}
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
-                                            <ProjectTitle project={project} isDark={isDark} />
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                padding: '4px 10px',
-                                                borderRadius: '9999px',
-                                                backgroundColor: isDark ? 'rgba(38, 38, 38, 0.6)' : '#f3f4f6',
-                                                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                                                flexShrink: 0
-                                            }}>
-                                                <div
-                                                    className="status-dot-pulse"
-                                                    style={{
-                                                        width: '6px',
-                                                        height: '6px',
-                                                        borderRadius: '50%',
-                                                        backgroundColor: project.status === 'Live' ? '#3b82f6' : '#eab308'
-                                                    }}
-                                                />
-                                                <span style={{
-                                                    color: isDark ? '#d1d5db' : '#4b5563',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: '500',
-                                                    whiteSpace: 'nowrap'
-                                                }}><TextReveal delay={revealDelay(9.2)}>{project.status}</TextReveal></span>
-                                            </div>
-                                        </div>
-                                        <p style={{
-                                            fontSize: '0.8125rem',
-                                            color: isDark ? '#9ca3af' : '#6b7280',
-                                            lineHeight: '1.5',
-                                            margin: 0
-                                        }}>
-                                            <TextReveal delay={revealDelay(9.3)}>{project.description}</TextReveal>
-                                        </p>
-                                    </div>
-
-                                    {/* Tech Stack */}
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                        {project.tags.map((tech, i) => (
-                                            <motion.span
-                                                key={i}
-                                                whileHover={{ scale: 1.05 }}
-                                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                                style={{
-                                                    display: 'inline-block',
-                                                    padding: '4px 12px',
-                                                    borderRadius: '6px',
-                                                    backgroundColor: isDark ? 'rgba(55, 65, 81, 0.5)' : '#f3f4f6',
-                                                    color: isDark ? '#d1d5db' : '#374151',
-                                                    fontSize: '0.7rem',
-                                                    fontWeight: '500',
-                                                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`
-                                                }}
-                                            >
-                                                <TextReveal delay={revealDelay(9.4 + i * 0.04)}>{tech}</TextReveal>
-                                            </motion.span>
-                                        ))}
-
-                                    </div>
-
-                                    {/* Footer: Buttons */}
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: 'auto', flexWrap: 'wrap' }}>
-                                        <Link
-                                            href={`/projects/${project.id}`}
-                                            className="group text-gray-500 dark:text-gray-400 hover:text-[#2563eb] transition-colors"
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                fontSize: '0.8125rem',
-                                                fontWeight: '500',
-                                                textDecoration: 'underline',
-                                                textUnderlineOffset: '3px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                        >
-                                            {rt('View Details', 9.6)}
-                                            <svg className="transition-transform duration-300 ease-out group-hover:-rotate-45" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M5 12h14"></path>
-                                                <path d="M12 5l7 7-7 7"></path>
-                                            </svg>
-                                        </Link>
-
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <motion.a
-                                                href={project.demo || '#'}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                whileHover={{
-                                                    scale: 1.05,
-                                                    boxShadow: isDark
-                                                        ? '0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.4), 0 0 75px rgba(59, 130, 246, 0.2)'
-                                                        : '0 0 25px rgba(37, 99, 235, 0.6), 0 0 50px rgba(37, 99, 235, 0.3), 0 0 75px rgba(37, 99, 235, 0.15)'
-                                                }}
-                                                whileTap={{ scale: 0.98 }}
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                                                    color: isDark ? '#e5e7eb' : '#1f2937',
-                                                    border: `1px solid ${isDark ? '#374151' : '#d1d5db'}`,
-                                                    borderRadius: '8px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: '500',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    textDecoration: 'none',
-                                                    transition: 'all 0.2s ease'
-                                                }}
-                                            >
-                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
-                                                {rt('Demo', 9.7)}
-                                            </motion.a>
-                                            <motion.a
-                                                href={project.github || '#'}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                whileHover={{
-                                                    scale: 1.05,
-                                                    boxShadow: isDark
-                                                        ? '0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.4), 0 0 75px rgba(59, 130, 246, 0.2)'
-                                                        : '0 0 25px rgba(37, 99, 235, 0.6), 0 0 50px rgba(37, 99, 235, 0.3), 0 0 75px rgba(37, 99, 235, 0.15)'
-                                                }}
-                                                whileTap={{ scale: 0.98 }}
-                                                transition={{ duration: 0.2 }}
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    backgroundColor: isDark ? '#374151' : '#f3f4f6',
-                                                    color: isDark ? 'white' : '#1f2937',
-                                                    borderRadius: '8px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: '500',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    textDecoration: 'none',
-                                                    border: `1px solid ${isDark ? '#374151' : '#d1d5db'}`
-                                                }}
-                                            >
-                                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                                </svg>
-                                                {rt('GitHub', 9.75)}
-                                            </motion.a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </SpotlightCard>
-                    ))}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+                    {projects
+                        .filter(p => p.id !== 'portfolio')
+                        .map((project, i) => (
+                            <ProjectCard key={project.id} project={project} index={i} isDark={isDark} />
+                        ))}
                 </div>
 
                 <div style={{ marginTop: '16px', textAlign: 'left' }}>
