@@ -96,7 +96,8 @@ export default function CommandPalette() {
             icon: <FolderGit2 size={16} />,
             keywords: `${p.tags.join(" ")} ${p.description}`,
             hint: p.status,
-            perform: () => go(`/projects/${p.id}`),
+            // Detail route is gone; send people to the project's own link, falling back to the listing page.
+            perform: () => go(p.demo || p.github || '/projects'),
         }));
 
         return [
