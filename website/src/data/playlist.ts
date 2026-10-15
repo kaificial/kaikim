@@ -148,12 +148,6 @@ export const playlist: PlaylistSong[] = [
     { title: "Yes I'm Changing", artist: "Tame Impala" },
     { title: "Eventually", artist: "Tame Impala" },
 
-    // TV Girl
-    { title: "Lovers Rock", artist: "TV Girl" },
-    { title: "Not Allowed", artist: "TV Girl" },
-    { title: "Cigarettes out the Window", artist: "TV Girl" },
-    { title: "Loving Machine", artist: "TV Girl" },
-
     // The Smiths
     { title: "There Is a Light That Never Goes Out", artist: "The Smiths" },
     { title: "This Charming Man", artist: "The Smiths" },
@@ -186,53 +180,7 @@ export const playlist: PlaylistSong[] = [
     { title: "Natural", artist: "Shelly" },
     { title: "Cross Your Mind", artist: "Shelly" },
 
-    // Strawberry Guy
-    { title: "Mrs Magic", artist: "Strawberry Guy" },
-    { title: "What Would I Do?", artist: "Strawberry Guy" },
-    { title: "Without You", artist: "Strawberry Guy" },
 
-    // Jazz / standards
-    { title: "Solitude", artist: "Billie Holiday" },
-    { title: "I'll Be Seeing You", artist: "Billie Holiday" },
-    { title: "My Funny Valentine", artist: "Chet Baker" },
-    { title: "La vie en rose", artist: "Louis Armstrong" },
-    { title: "Strangers In The Night", artist: "Frank Sinatra" },
-    { title: "Dream A Little Dream Of Me", artist: "Ella Fitzgerald" },
-
-    // Singles & others
-    { title: "Duvet", artist: "bôa" },
-    { title: "Nightcall", artist: "Kavinsky" },
-    { title: "Eyes Without A Face", artist: "Billy Idol" },
-    { title: "I'm Not In Love", artist: "10cc" },
-    { title: "Head Over Heels", artist: "Tears For Fears" },
-    { title: "Boys Don't Cry", artist: "The Cure" },
-    { title: "Linger", artist: "The Cranberries" },
-    { title: "Here Comes Your Man", artist: "Pixies" },
-    { title: "Lover, You Should've Come Over", artist: "Jeff Buckley" },
-    { title: "When the Sun Hits", artist: "Slowdive" },
-    { title: "D>E>A>T>H>M>E>T>A>L", artist: "Panchiko" },
-    { title: "Tek It", artist: "Cafuné" },
-    { title: "Good Looking", artist: "Suki Waterhouse" },
-    { title: "space girl", artist: "Frances Forever" },
-    { title: "Telephones", artist: "Vacations" },
-    { title: "Someone To Spend Time With", artist: "Los Retros" },
-    { title: "Harvey", artist: "Her's" },
-    { title: "Stress Relief", artist: "late night drive home" },
-    { title: "I Can't Handle Change", artist: "Roar" },
-    { title: "Need 2", artist: "Pinegrove" },
-    { title: "Sarah", artist: "Alex G" },
-    { title: "Mystery Girl", artist: "Housecall" },
-    { title: "Fall In Love Alone", artist: "Stacey Ryan" },
-    { title: "Easily", artist: "Bruno Major" },
-    { title: "Leave The Door Open", artist: "Bruno Mars" },
-    { title: "IN YOUR EYES", artist: "Snoh Aalegra" },
-    { title: "Almeda", artist: "Solange" },
-    { title: "Charcoal Baby", artist: "Blood Orange" },
-    { title: "Funny Thing", artist: "Thundercat" },
-    { title: "Small Worlds", artist: "Mac Miller" },
     { title: "Get Up", artist: "NewJeans" },
-    { title: "Clementine", artist: "grentperez" },
-    { title: "Want U Around", artist: "Omar Apollo" },
-    { title: "Heaven Can Wait", artist: "Michael Jackson" },
-    { title: "Roddy", artist: "Djo" },
+
 ];
