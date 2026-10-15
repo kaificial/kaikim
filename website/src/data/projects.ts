@@ -20,6 +20,15 @@ export interface Project {
 
 export const projects: Project[] = [
     {
+        id: 'equinox',
+        title: 'Equinox',
+        description: 'Equinox is a full-stack tool for detecting and reducing bias in resume datasets.',
+        tags: ['Python', 'Next.js', 'TypeScript', 'Three.js', 'LLMs', 'Machine Learning'],
+        status: 'Building',
+        url: '',
+        video: '/assets/equinox.mp4',
+    },
+    {
         id: 'marrow',
         title: 'Marrow',
         description: 'Marrow reports outcome. It tracks every line in your repository and measures how long it survives, with human-written code as the control group.',
