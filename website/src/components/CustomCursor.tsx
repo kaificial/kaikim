@@ -43,7 +43,6 @@ export default function CustomCursor() {
         let pressed = false;
         let stateScale = 1; // eases toward hover/press scale
         let lastTarget: EventTarget | null = null;
-        let idleTimer = 0;
         let raf = 0;
 
         const show = () => {
@@ -133,17 +132,9 @@ export default function CustomCursor() {
             const speed = Math.hypot(velocity.x, velocity.y);
 
             if (speed > 0.35) {
-                idleTimer = 0;
                 const desired = Math.atan2(velocity.y, velocity.x);
                 const headingFactor = 1 - Math.exp(-dt * 22);
                 heading += angleDelta(heading, desired) * headingFactor;
-            } else {
-                idleTimer += dt;
-                if (idleTimer > 0.28 || overInteractive) {
-                    const settleSpeed = overInteractive ? 14 : 8;
-                    const settleFactor = 1 - Math.exp(-dt * settleSpeed);
-                    heading += angleDelta(heading, REST_HEADING) * settleFactor;
-                }
             }
 
             // Tilt/bank into turns
