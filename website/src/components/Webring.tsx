@@ -20,7 +20,7 @@ export default function Webring() {
             <a
                 href={`https://queensu-webring.ca/#${siteUrl}?nav=prev`}
                 style={{
-                    color: isDark ? 'white' : 'black',
+                    color: isDark ? '#f5f5f5' : 'black',
                     textDecoration: 'none',
                     fontSize: '1.2rem',
                     padding: '4px 8px'
@@ -52,7 +52,7 @@ export default function Webring() {
             <a
                 href={`https://queensu-webring.ca/#${siteUrl}?nav=next`}
                 style={{
-                    color: isDark ? 'white' : 'black',
+                    color: isDark ? '#f5f5f5' : 'black',
                     textDecoration: 'none',
                     fontSize: '1.2rem',
                     padding: '4px 8px'

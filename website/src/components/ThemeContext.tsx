@@ -1,6 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
+import { sfx } from "../lib/sfx";
+import { runThemeTransition } from "../lib/themeTransition";
 
 interface ThemeContextType {
     isDark: boolean;
@@ -35,12 +38,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const toggleTheme = () => {
         const newTheme = !isDark;
-        setIsDark(newTheme);
+        sfx.theme(newTheme);
 
-        // Update the DOM
-        document.documentElement.classList.toggle("dark", newTheme);
+        // the grid turns over: the new theme lands tile by tile from where you clicked.
+        // everything has to change right away inside the transition, so react
+        // commits the new colours (flushSync) before the browser grabs the new page
+        const wave = runThemeTransition(() => {
+            flushSync(() => setIsDark(newTheme));
+            document.documentElement.classList.toggle("dark", newTheme);
+        });
+        if (wave) sfx.themeWave(newTheme, wave);
 
-        //localStorage
         localStorage.setItem("theme", newTheme ? "dark" : "light");
     };
 

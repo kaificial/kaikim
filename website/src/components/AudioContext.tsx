@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import { sfx } from "../lib/sfx";
 
 export interface Track {
     id: string;
@@ -89,6 +90,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [currentTrack, setCurrentTrack] = useState<Track>(DEFAULT_TRACK);
     const [isPlaying, setIsPlaying] = useState(false);
+    // sound effects drop 6 dB while music plays
+    useEffect(() => { sfx.duck(isPlaying); }, [isPlaying]);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
 

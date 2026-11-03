@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "./ThemeContext";
 import { useUISound } from "../hooks/use-ui-sound";
+import { mouseOnly } from '../styles/motion';
 
 interface HeadingInfo {
     id: string;
@@ -123,11 +124,11 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
 
     // Colors 
     const widgetBg = isDark ? (isExpanded ? '#171717' : 'rgba(38, 38, 38, 0.8)') : '#E5E7EB';
-    const widgetBorderColor = isDark ? '#374151' : '#D1D5DB';
-    const textColor = isDark ? '#E5E7EB' : '#111827';
-    const subTextColor = isDark ? '#9ca3af' : '#4b5563';
-    const progressBgColor = isDark ? '#4b5563' : '#d1d5db';
-    const progressFillColor = isDark ? '#ffffff' : '#111827';
+    const widgetBorderColor = isDark ? '#2a2a2a' : '#D1D5DB';
+    const textColor = isDark ? '#e6e6e6' : '#111827';
+    const subTextColor = isDark ? '#8f8f8f' : '#4b5563';
+    const progressBgColor = isDark ? '#3a3a3a' : '#d1d5db';
+    const progressFillColor = isDark ? '#f5f5f5' : '#111827';
 
     const expandedHeight = 12 + 40 + 8 + (headings.length * 34) + 12;
 
@@ -266,7 +267,7 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
                             height="14"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke={isDark ? '#9ca3af' : '#6b7280'}
+                            stroke={isDark ? '#8f8f8f' : '#6b7280'}
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -319,14 +320,14 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
                                         letterSpacing: '-0.01em',
                                         transition: 'background 0.15s ease',
                                     }}
-                                    onMouseEnter={(e) => {
+                                    onPointerEnter={mouseOnly((e) => {
                                         if (!isActive)
                                             (e.currentTarget as HTMLElement).style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)';
-                                    }}
-                                    onMouseLeave={(e) => {
+                                    })}
+                                    onPointerLeave={mouseOnly((e) => {
                                         if (!isActive)
                                             (e.currentTarget as HTMLElement).style.background = 'transparent';
-                                    }}
+                                    })}
                                 >
                                     {/* Active indicator */}
                                     <div style={{

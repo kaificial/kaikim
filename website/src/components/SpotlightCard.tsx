@@ -40,10 +40,10 @@ export const SpotlightCard = ({ children, isDark, noPadding = false, spotlight =
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             style={{
-                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
                 borderRadius: '8px',
                 padding: noPadding ? '0' : '16px',
-                backgroundColor: isDark ? '#171717' : 'white',
+                backgroundColor: isDark ? '#141414' : 'white',
                 position: 'relative',
                 overflow: 'hidden',
                 boxShadow: isDark

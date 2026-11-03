@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    // notes reads posters from disk to work out spine colours on revalidation
+    outputFileTracingIncludes: {
+        '/notes': ['./public/music/**/*.jpg'],
+    },
     images: {
         formats: ['image/avif', 'image/webp'],
         remotePatterns: [
@@ -13,6 +17,11 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: 'image.tmdb.org',
                 pathname: '/t/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'a.ltrbxd.com',
+                pathname: '/resized/**',
             },
             {
                 protocol: 'https',

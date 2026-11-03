@@ -1,3 +1,13 @@
+// hover styles only for real mice: touch screens trigger :hover on tap and it gets stuck
+@mixin hover {
+    @media (hover: hover) and (pointer: fine) {
+        &:hover {
+            @content;
+        }
+    }
+}
+
+
 /*
  * globals.scss
  */
@@ -21,6 +31,7 @@
 
 // light mode colors
 :root {
+    color-scheme: light;
     --bg-color: #f5f5f4;
     --text-color: #1c1917;
     --grid-color: rgba(0, 0, 0, 0.02);
@@ -30,15 +41,68 @@
     --accent-hover: #2563eb;
 
     --cursor-bloom-color: rgba(37, 99, 235, 0.035);
+
+    // shared colours, keep in sync with src/styles/palette.ts
+    // (framer-motion animations need the actual values from there)
+    --c-text-strong: #1c1917;
+    --c-text-muted: #6b7280;
+    --c-text-soft: #4b5563;
+    --c-border: #e5e7eb;
+    --c-hairline: rgba(0, 0, 0, 0.1);
+    --c-surface: #ffffff;
+    --c-chip-bg: #E5E7EB;
+    --c-chip-fg: #111827;
+    --c-chip-border: #D1D5DB;
+    --c-tag-bg: #f3f4f6;
+    --c-tag-fg: #374151;
+    --c-link: #2563eb;
 }
 
-// dark mode colors
-.dark {
-    --bg-color: #111110;
-    --text-color: #fafafa;
-    --grid-color: rgba(255, 255, 255, 0.015);
+// while the theme wave runs (lib/themeTransition.ts) colour transitions are off so the
+// new page gets captured in its final colours, not mid-fade
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+    transition: none !important;
+}
 
-    --cursor-bloom-color: rgba(59, 130, 246, 0.05);
+// dark mode colours: "graphite". neutral blacks and greys, no tint: a near-black
+// page, surfaces a step lighter each layer, thin borders, soft off-white text.
+// keep the --c-* values in sync with src/styles/palette.ts
+.dark {
+    color-scheme: dark;
+    --bg-color: #0c0c0c;
+    --text-color: #ececec;
+    --grid-color: rgba(255, 255, 255, 0.025);
+
+    --cursor-bloom-color: rgba(255, 255, 255, 0.035);
+
+    --c-text-strong: #f5f5f5;
+    --c-text-muted: #8f8f8f;
+    --c-text-soft: #a3a3a3;
+    --c-border: #2a2a2a;
+    --c-hairline: rgba(255, 255, 255, 0.1);
+    --c-surface: #141414;
+    --c-chip-bg: rgba(28, 28, 28, 0.85);
+    --c-chip-fg: #e6e6e6;
+    --c-chip-border: #2a2a2a;
+    --c-tag-bg: rgba(52, 52, 52, 0.55);
+    --c-tag-fg: #c8c8c8;
+    --c-link: #3b82f6;
+}
+
+// a faint light from the top of the page, and darker black at the edges
+.dark body {
+    background-image:
+        radial-gradient(ellipse 1500px 760px at 50% -260px, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.0225) 40%, rgba(255, 255, 255, 0.006) 65%, transparent 85%),
+        radial-gradient(ellipse at 50% 120%, rgba(0, 0, 0, 0.6), transparent 60%);
+    background-attachment: fixed;
+}
+
+.dark ::selection {
+    background: rgba(255, 255, 255, 0.16);
+    color: #f5f5f5;
 }
 
 html {
@@ -209,7 +273,7 @@ pre {
     background-color: transparent;
     border: 1px solid transparent;
     border-radius: 8px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -217,7 +281,7 @@ pre {
     line-height: 1;
     white-space: nowrap;
 
-    &:hover {
+    @include hover {
         background-color: rgba(0, 0, 0, 0.04);
     }
 
@@ -234,7 +298,7 @@ pre {
 // dark mode adjustments for the nav pill and buttons
 .dark {
     .nav-pill-container {
-        background-color: rgba(23, 23, 23, 1);
+        background-color: rgba(20, 20, 20, 0.92);
         border-color: rgba(255, 255, 255, 0.1);
         box-shadow:
             0 2px 8px rgba(0, 0, 0, 0.3),
@@ -244,13 +308,13 @@ pre {
     .nav-link {
         color: rgba(255, 255, 255, 0.7);
 
-        &:hover {
+        @include hover {
             background-color: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.9);
         }
 
         &.active {
-            background-color: #2a2a2a;
+            background-color: #1f1f1f;
             color: white;
             border-color: rgba(255, 255, 255, 0.15);
             box-shadow:
@@ -272,10 +336,10 @@ pre {
     border-radius: 10px;
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
-    &:hover {
+    @include hover {
         transform: translateY(-1px);
         border-color: rgba(0, 0, 0, 0.2);
     }
@@ -286,11 +350,11 @@ pre {
 }
 
 .dark .theme-toggle {
-    background-color: #121212;
+    background-color: #141414;
     border-color: rgba(255, 255, 255, 0.1);
     color: white;
 
-    &:hover {
+    @include hover {
         border-color: rgba(255, 255, 255, 0.3);
     }
 
@@ -368,9 +432,9 @@ pre {
 }
 
 .dark .location-pill {
-    background-color: rgba(38, 38, 38, 0.8) !important;
-    color: #E5E7EB !important;
-    border: 1px solid #374151 !important;
+    background-color: var(--c-chip-bg) !important;
+    color: var(--c-chip-fg) !important;
+    border: 1px solid var(--c-chip-border) !important;
 }
 
 // hero layout styling stacked on ip[hone, 2 columns on larger screens, laptop, lablet, etc.
@@ -425,7 +489,7 @@ pre {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 
     // outline effect using box-shadow
     padding: 3px;
@@ -444,14 +508,14 @@ pre {
         max-width: 240px;
     }
 
-    &:hover {
+    @include hover {
         transform: scale(1.02);
     }
 }
 
 .dark .image-placeholder {
     padding: 3px;
-    box-shadow: 0 0 0 2px #374151;
+    box-shadow: 0 0 0 2px #2a2a2a;
     margin: 6px;
 }
 
@@ -512,19 +576,19 @@ pre {
     border-radius: 10px;
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 
-    &:hover {
+    @include hover {
         transform: translateY(-1px);
         border-color: rgba(0, 0, 0, 0.2);
     }
 }
 
 .dark .mobile-menu-btn {
-    background-color: #121212;
+    background-color: #141414;
     border-color: rgba(255, 255, 255, 0.1);
 
-    &:hover {
+    @include hover {
         border-color: rgba(255, 255, 255, 0.3);
     }
 }
@@ -550,7 +614,7 @@ pre {
 
 .dark {
     .header-nav.mobile-open {
-        background-color: rgba(23, 23, 23, 0.9);
+        background-color: rgba(20, 20, 20, 0.92);
         border-color: rgba(255, 255, 255, 0.1);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
@@ -685,6 +749,15 @@ pre {
         }
     }
 
+    // most phones (10 dock slots incl. the sound toggle have to fit in 100vw - 16px)
+    @media (max-width: 400px) {
+        button,
+        a {
+            width: 32px !important;
+            height: 32px !important;
+        }
+    }
+
     // extra small phones: shrink so nothing spills off the bar
     @media (max-width: 360px) {
         gap: 1px !important;
@@ -734,7 +807,7 @@ pre {
 .vertical-divider,
 .theme-buttons-container,
 .mobile-menu-wrapper {
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease, opacity 0.3s ease;
 }
 
 // Custom grid for projects page to guarantee 2 columns
@@ -777,12 +850,6 @@ pre {
     }
 }
 
-.nav-pill-container,
-.header-nav,
-.theme-buttons-container,
-.mobile-menu-wrapper {
-    transition: all 0.3s ease;
-}
 
 // Project detail page sticky header
 .project-detail-header {
@@ -977,6 +1044,34 @@ body.custom-cursor-text .paper-cursor-root {
     stroke-linecap: round;
     opacity: 0.9;
     transition: stroke 0.2s ease, opacity 0.2s ease;
+}
+
+/* dark mode cursor: crisp white paper plane with a thin dark rim and silver-white shading */
+.dark {
+    .paper-cursor-plane svg {
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+    }
+
+    .cursor-rim {
+        fill: #ffffff;
+        stroke: #090d16;
+    }
+
+    .cursor-facet-top {
+        fill: url(#cursor-facet-left-grad-dark);
+    }
+
+    .cursor-facet-bottom {
+        fill: url(#cursor-facet-right-grad-dark);
+    }
+
+    .cursor-spine {
+        stroke: rgba(15, 23, 42, 0.4);
+    }
+
+    .cursor-core {
+        stroke: var(--accent-blue);
+    }
 }
 
 /* Hover state: illuminated electric blue glow and reactive flare */
@@ -1259,10 +1354,12 @@ body.custom-cursor-text .paper-cursor-root {
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.contrib-cell:hover {
-    transform: scale(1.8);
-    z-index: 10;
-    box-shadow: 0 0 12px var(--cell-color, #3b82f6);
+.contrib-cell {
+    @include hover {
+        transform: scale(1.8);
+        z-index: 10;
+        box-shadow: 0 0 12px var(--cell-color, #3b82f6);
+    }
 }
 
 /* Scroll progress bar perf hint */
@@ -1273,4 +1370,12 @@ body.custom-cursor-text .paper-cursor-root {
 /* Spotlight card containment  */
 .spotlight-card-contained {
     contain: layout style;
+}
+/* 404 page: windows terminal close button goes red on hover, like the real one */
+.wt-close {
+    @include hover {
+        background: #c42b1c !important;
+        color: #fff !important;
+        opacity: 1 !important;
+    }
 }

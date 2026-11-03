@@ -12,6 +12,7 @@ import InteractiveGrid from "../components/InteractiveGrid";
 import CommandPalette from "../components/CommandPalette";
 import FloatingDock from "../components/FloatingDock";
 import CustomCursor from "../components/CustomCursor";
+import { SfxBoot } from "../lib/sfx/react";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -88,7 +89,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Kai Kim',
         description: "what i've been building: Clairo (AI medical assistant), Rooke (chess AI with 3D visualization), Scribe (handwritten LaTeX converter). CS @ Queen's University, Toronto.",
-        creator: '@kaificial',
+        creator: '@kaikimto',
         images: ['/og-image.png'],
     },
 };
@@ -170,6 +171,7 @@ export default function RootLayout({
                         <CommandPalette />
                         <FloatingDock />
                         <CustomCursor />
+                        <SfxBoot />
                     </AudioProvider>
                 </ThemeProvider>
             </body>

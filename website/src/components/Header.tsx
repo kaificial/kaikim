@@ -1,14 +1,46 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { Flame, Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeContext";
 import { useAudio } from "./AudioContext";
 import { useUISound } from "../hooks/use-ui-sound";
+import { sfx } from "../lib/sfx";
+import { mouseOnly, PRESS } from '../styles/motion';
+
+// 7 × 6 pixel heart. "#" = outline, "o" = fill (only once liked), "*" = highlight
+const HEART_PIXELS = [
+    ".##.##.",
+    "#o*#oo#",
+    "#ooooo#",
+    ".#ooo#.",
+    "..#o#..",
+    "...#...",
+];
+
+/** pixel heart: just an outline until liked, then filled with a little highlight */
+const PixelHeart = ({ filled, color, size = 16 }: { filled: boolean; color: string; size?: number }) => (
+    <svg
+        width={size}
+        height={(size * 6) / 7}
+        viewBox="0 0 7 6"
+        shapeRendering="crispEdges"
+        aria-hidden="true"
+        style={{ display: 'block' }}
+    >
+        {HEART_PIXELS.flatMap((row, y) =>
+            [...row].map((px, x) => {
+                if (px === '.' || (!filled && px !== '#')) return null;
+                const fill = px === '*' ? 'rgba(255,255,255,0.85)' : color;
+                return <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={fill} />;
+            })
+        )}
+    </svg>
+);
 
 const navLinks = [
     { href: "/", label: "Home" },
@@ -20,9 +52,14 @@ const ISLAND_SPRING = { type: "spring", stiffness: 280, damping: 30 } as const;
 
 const MARQUEE_PERIOD_S = 10;
 const Marquee = ({ label }: { label: string }) => {
+    const trackRef = useRef<HTMLDivElement | null>(null);
+    // pin the animation to the document timeline so every copy (header slot + island) stays in sync
+    useLayoutEffect(() => {
+        trackRef.current?.getAnimations().forEach((a) => { a.startTime = 0; });
+    }, []);
     return (
         <div style={{ flex: 1, overflow: 'hidden', marginLeft: 6, marginRight: 6, minWidth: 0, maskImage: 'linear-gradient(to right, transparent 0%, black 6px, black calc(100% - 6px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 6px, black calc(100% - 6px), transparent 100%)' }}>
-            <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: `marquee-scroll ${MARQUEE_PERIOD_S}s linear infinite`, width: 'fit-content' }}>
+            <div ref={trackRef} style={{ display: 'flex', whiteSpace: 'nowrap', animation: `marquee-scroll ${MARQUEE_PERIOD_S}s linear infinite`, width: 'fit-content' }}>
                 {[0, 1].map((i) => (
                     <span key={i} style={{ color: '#d1d5db', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '-0.01em', paddingRight: '1.5em' }}>
                         {label}
@@ -76,7 +113,7 @@ const MusicWidget = () => {
 
     const togglePlay = (e: React.MouseEvent) => {
         e.stopPropagation();
-        playClick();
+        sfx.toggle(!isPlaying);
         globalTogglePlay();
     };
 
@@ -163,7 +200,7 @@ const MusicWidget = () => {
         const r = slotRef.current?.getBoundingClientRect();
         if (r) setSlotRect({ top: r.top, left: r.left });
     };
-    const expand = () => { playClick(); measureSlot(); setIslandPresent(true); setIsExpanded(true); };
+    const expand = () => { sfx.pop(); measureSlot(); setIslandPresent(true); setIsExpanded(true); };
     const collapse = () => {
         playClick();
         measureSlot();
@@ -205,10 +242,10 @@ const MusicWidget = () => {
                 {isPlaying ? (
                     <motion.div
                         onClick={togglePlay}
-                        onMouseEnter={(e) => { e.stopPropagation(); setHoverText("Pause Song"); }}
-                        onMouseLeave={(e) => { e.stopPropagation(); setHoverText("Click to Expand"); }}
+                        onPointerEnter={mouseOnly((e) => { e.stopPropagation(); setHoverText("Pause Song"); })}
+                        onPointerLeave={mouseOnly((e) => { e.stopPropagation(); setHoverText("Click to Expand"); })}
                         whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={PRESS}
                         style={{ display: 'flex', alignItems: 'center', gap: '2.5px', cursor: 'pointer', position: 'relative' }}
                     >
                         {waveBars(true)}
@@ -216,10 +253,10 @@ const MusicWidget = () => {
                 ) : (
                     <motion.div
                         onClick={togglePlay}
-                        onMouseEnter={(e) => { e.stopPropagation(); setHoverText("Play Song"); }}
-                        onMouseLeave={(e) => { e.stopPropagation(); setHoverText("Click to Expand"); }}
+                        onPointerEnter={mouseOnly((e) => { e.stopPropagation(); setHoverText("Play Song"); })}
+                        onPointerLeave={mouseOnly((e) => { e.stopPropagation(); setHoverText("Click to Expand"); })}
                         whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={PRESS}
                         style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     >
                         <Play size={14} color={waveInactiveColor} fill={waveInactiveColor} />
@@ -227,11 +264,11 @@ const MusicWidget = () => {
                 )}
                 <motion.div
                     onClick={(e) => { e.stopPropagation(); playClick(); shuffleTrack(); }}
-                    onMouseEnter={(e) => { e.stopPropagation(); setHoverText("Skip Song"); }}
-                    onMouseLeave={(e) => { e.stopPropagation(); setHoverText("Click to Expand"); }}
+                    onPointerEnter={mouseOnly((e) => { e.stopPropagation(); setHoverText("Skip Song"); })}
+                    onPointerLeave={mouseOnly((e) => { e.stopPropagation(); setHoverText("Click to Expand"); })}
                     aria-label="Skip to next song"
                     whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={PRESS}
                     style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                 >
                     <SkipForward size={14} color={waveInactiveColor} fill={waveInactiveColor} />
@@ -267,7 +304,7 @@ const MusicWidget = () => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '0 12px' }}>
                     <motion.div
                         whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={PRESS}
                         onClick={(e) => { e.stopPropagation(); playClick(); seek(0); }}
                         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: 40, height: 40, borderRadius: '50%' }}
                     >
@@ -281,7 +318,7 @@ const MusicWidget = () => {
 
                     <motion.div
                         whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={PRESS}
                         onClick={togglePlay}
                         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: 52, height: 52, borderRadius: '50%' }}
                     >
@@ -295,7 +332,7 @@ const MusicWidget = () => {
 
                     <motion.div
                         whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={PRESS}
                         onClick={(e) => { e.stopPropagation(); playClick(); shuffleTrack(); }}
                         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: 40, height: 40, borderRadius: '50%' }}
                     >
@@ -318,7 +355,10 @@ const MusicWidget = () => {
         <div
             ref={slotRef}
             style={{ position: 'relative', width: 150, height: 36 }}
-            onMouseEnter={(e) => {
+            onPointerEnter={(e) => {
+                // mouse only: touch fakes enter on tap and never leaves. (done inline, not with mouseOnly(),
+                // because the react compiler thinks a wrapped ref read happens during render)
+                if (e.pointerType !== 'mouse') return;
                 const rect = slotRef.current?.getBoundingClientRect();
                 setIsWidgetHovered(true);
                 setHoverText("Click to Expand");
@@ -328,7 +368,7 @@ const MusicWidget = () => {
                 const rect = slotRef.current?.getBoundingClientRect();
                 setMousePos({ x: e.clientX, y: e.clientY, widgetLeft: rect?.left || 0, widgetWidth: rect?.width || 150 });
             }}
-            onMouseLeave={() => { setIsWidgetHovered(false); setHoverText(null); }}
+            onPointerLeave={mouseOnly(() => { setIsWidgetHovered(false); setHoverText(null); })}
         >
             {!islandPresent && (
                 <div
@@ -439,8 +479,8 @@ const MusicWidget = () => {
                                     width: T,
                                     display: 'flex',
                                     justifyContent: 'center',
-                                    backgroundColor: isDark ? '#1f2937' : 'white',
-                                    color: isDark ? 'white' : '#1f2937',
+                                    backgroundColor: isDark ? '#181818' : 'white',
+                                    color: isDark ? '#f5f5f5' : '#1f2937',
                                     padding: '4px 0',
                                     borderRadius: '8px',
                                     fontSize: '0.75rem',
@@ -460,7 +500,7 @@ const MusicWidget = () => {
                                     transform: 'translateX(-50%) rotate(45deg)',
                                     width: '10px',
                                     height: '10px',
-                                    backgroundColor: isDark ? '#1f2937' : 'white',
+                                    backgroundColor: isDark ? '#181818' : 'white',
                                     borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
                                     borderLeft: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
                                 }} />
@@ -606,8 +646,8 @@ export default function Header() {
 
                 <div className="theme-buttons-container" style={{ display: 'flex', gap: '12px', alignItems: 'center', position: 'relative' }}>
                     <motion.div
-                        onMouseEnter={() => { setIsHovered(true); }}
-                        onMouseLeave={() => setIsHovered(false)}
+                        onPointerEnter={mouseOnly(() => { setIsHovered(true); })}
+                        onPointerLeave={mouseOnly(() => setIsHovered(false))}
                         style={{ position: 'relative' }}
                     >
                         <AnimatePresence>
@@ -620,8 +660,8 @@ export default function Header() {
                                         position: 'absolute',
                                         bottom: 'calc(100% + 2px)',
                                         left: '50%',
-                                        backgroundColor: isDark ? '#1E293B' : 'white',
-                                        color: isDark ? 'white' : '#1E293B',
+                                        backgroundColor: isDark ? '#1f1f1f' : 'white',
+                                        color: isDark ? '#f5f5f5' : '#1E293B',
                                         padding: '6px 12px',
                                         borderRadius: '6px',
                                         fontSize: '0.8125rem',
@@ -641,16 +681,16 @@ export default function Header() {
                                         transform: 'translateX(-50%)',
                                         borderLeft: '6px solid transparent',
                                         borderRight: '6px solid transparent',
-                                        borderTop: `6px solid ${isDark ? '#1E293B' : 'white'}`,
+                                        borderTop: `6px solid ${isDark ? '#1f1f1f' : 'white'}`,
                                     }} />
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
                         <motion.button
-                            onClick={() => { playClick(); handleLikeClick(); }}
+                            onClick={() => { sfx.like(!hasLiked); handleLikeClick(); }}
                             whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileTap={PRESS}
                             transition={{ type: "spring", stiffness: 400, damping: 17 }}
                             style={{
                                 display: 'flex',
@@ -660,21 +700,20 @@ export default function Header() {
                                 minWidth: '40px',
                                 height: '40px',
                                 padding: '0 12px',
-                                backgroundColor: isDark ? '#171717' : '#f9fafb',
+                                backgroundColor: isDark ? '#141414' : '#f9fafb',
                                 border: `1px solid ${hasLiked ? (isDark ? 'rgba(37, 99, 235, 0.4)' : 'rgba(37, 99, 235, 0.3)') : (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)')}`,
                                 borderRadius: '10px',
-                                color: hasLiked ? '#2563eb' : (isDark ? '#94a3b8' : '#64748b'),
+                                color: hasLiked ? '#2563eb' : (isDark ? '#8f8f8f' : '#64748b'),
                                 cursor: 'pointer',
                                 fontSize: '0.875rem',
                                 fontWeight: '600',
                                 boxShadow: hasLiked ? '0 2px 10px rgba(37, 99, 235, 0.15)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
-                                transition: 'all 0.2s ease'
+                                transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease'
                             }}
                         >
-                            <Flame
-                                size={16}
-                                color={hasLiked ? "#2563eb" : (isDark ? "#94a3b8" : "#64748b")}
-                                fill={hasLiked ? "#2563eb" : "none"}
+                            <PixelHeart
+                                filled={hasLiked}
+                                color={hasLiked ? "#2563eb" : (isDark ? "#8f8f8f" : "#64748b")}
                             />
                             {displayCount}
                         </motion.button>
