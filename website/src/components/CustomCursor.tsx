@@ -175,6 +175,7 @@ export default function CustomCursor() {
             <div ref={planeRef} className="paper-cursor-plane">
                 <svg viewBox="-21 -9 24 18" width="24" height="18">
                     <defs>
+                        {/* light mode facet gradients (dark stealth plane) */}
                         <linearGradient id="cursor-facet-left-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor="#0f172a" />
                             <stop offset="100%" stopColor="#020617" />
@@ -182,6 +183,16 @@ export default function CustomCursor() {
                         <linearGradient id="cursor-facet-right-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor="#1e293b" />
                             <stop offset="100%" stopColor="#0f172a" />
+                        </linearGradient>
+
+                        {/* dark mode facet gradients (crisp white/silver origami plane) */}
+                        <linearGradient id="cursor-facet-left-grad-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#ffffff" />
+                            <stop offset="100%" stopColor="#e2e8f0" />
+                        </linearGradient>
+                        <linearGradient id="cursor-facet-right-grad-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#f1f5f9" />
+                            <stop offset="100%" stopColor="#cbd5e1" />
                         </linearGradient>
                     </defs>
                     <g className="paper-cursor-shape">
