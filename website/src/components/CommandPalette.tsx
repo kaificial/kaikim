@@ -20,11 +20,14 @@ import {
     ArrowUp,
     ArrowDown,
     Search,
+    Volume2,
+    VolumeX,
 } from "lucide-react";
 import { useTheme } from "./ThemeContext";
 import { useAudio } from "./AudioContext";
 import { projects } from "../data/projects";
-import { useUISound } from "../hooks/use-ui-sound";
+import { sfx } from "../lib/sfx";
+import { setSfxMuted, useSfxMuted } from "../lib/sfx/react";
 
 interface Command {
     id: string;
@@ -48,7 +51,7 @@ export default function CommandPalette() {
     const router = useRouter();
     const { isDark, toggleTheme } = useTheme();
     const { isPlaying, togglePlay } = useAudio();
-    const { playClick } = useUISound();
+    const soundMuted = useSfxMuted();
     
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState("");
@@ -82,6 +85,7 @@ export default function CommandPalette() {
     const copy = useCallback(async (text: string, message: string) => {
         try {
             await navigator.clipboard.writeText(text);
+            sfx.success();
             showToast(message);
         } catch {
             showToast("Couldn't copy — your browser blocked it");
@@ -130,12 +134,18 @@ export default function CommandPalette() {
                 perform: () => copy("kaikimto@gmail.com", "Email copied to clipboard ✓"),
             },
             {
+                id: "sound", label: soundMuted ? "Turn Sound Effects On" : "Turn Sound Effects Off",
+                group: "Actions", icon: soundMuted ? <Volume2 size={16} /> : <VolumeX size={16} />,
+                keywords: "sound sfx audio mute unmute quiet volume effects",
+                perform: () => setSfxMuted(!soundMuted),
+            },
+            {
                 id: "github", label: "GitHub", group: "Connect", icon: <Github size={16} />,
                 keywords: "code source repo open source", hint: "@kaificial", perform: () => go("https://github.com/kaificial"),
             },
             {
                 id: "x", label: "X / Twitter", group: "Connect", icon: <XIcon size={15} />,
-                keywords: "twitter tweet social", hint: "@kaijinju", perform: () => go("https://x.com/kaijinju"),
+                keywords: "twitter tweet social", hint: "@kaikimto", perform: () => go("https://x.com/kaikimto"),
             },
             {
                 id: "linkedin", label: "LinkedIn", group: "Connect", icon: <Linkedin size={16} />,
@@ -150,7 +160,7 @@ export default function CommandPalette() {
                 keywords: "music playlist listen", perform: () => go("https://spti.fi/kaikim"),
             },
         ];
-    }, [isDark, isPlaying, toggleTheme, togglePlay, go, copy]);
+    }, [isDark, isPlaying, toggleTheme, togglePlay, go, copy, soundMuted]);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -182,10 +192,19 @@ export default function CommandPalette() {
 
     const runCommand = useCallback((cmd: Command | undefined) => {
         if (!cmd) return;
-        playClick();
+        // commands with their own sound (theme, sound toggle, copy) skip the generic confirm
+        if (!['theme', 'sound', 'copy-email'].includes(cmd.id)) sfx.confirm();
         close();
         window.setTimeout(() => { cmd.perform(); }, 10);
-    }, [close, playClick]);
+    }, [close]);
+
+    // open/close sound, after the state actually changes (not on first render)
+    const wasOpen = useRef(false);
+    useEffect(() => {
+        if (isOpen === wasOpen.current) return;
+        wasOpen.current = isOpen;
+        if (isOpen) sfx.open(); else sfx.close();
+    }, [isOpen]);
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
@@ -232,20 +251,13 @@ export default function CommandPalette() {
     }, [selected]);
 
     const onListKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "ArrowDown") {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
             e.preventDefault();
-            setSelected((s) => {
-                const next = (s + 1) % Math.max(grouped.flat.length, 1);
-                try { } catch { /* noop */ }
-                return next;
-            });
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setSelected((s) => {
-                const next = (s - 1 + grouped.flat.length) % Math.max(grouped.flat.length, 1);
-                try { } catch { /* noop */ }
-                return next;
-            });
+            const n = Math.max(grouped.flat.length, 1);
+            const next = (selected + (e.key === "ArrowDown" ? 1 : -1) + n) % n;
+            setSelected(next);
+            // each result is a step up the scale, so arrowing through the list plays it
+            sfx.step({ degree: next });
         } else if (e.key === "Enter") {
             e.preventDefault();
             runCommand(grouped.flat[selected]);
@@ -255,11 +267,11 @@ export default function CommandPalette() {
         }
     };
 
-    const panelBg = isDark ? "#111110" : "#ffffff";
+    const panelBg = isDark ? "#0c0c0c" : "#ffffff";
     const border = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-    const textColor = isDark ? "#fafafa" : "#1c1917";
-    const subText = isDark ? "#9ca3af" : "#6b7280";
-    const groupColor = isDark ? "#6b7280" : "#9ca3af";
+    const textColor = isDark ? "#f0f0f0" : "#1c1917";
+    const subText = isDark ? "#8f8f8f" : "#6b7280";
+    const groupColor = isDark ? "#6e6e6e" : "#9ca3af";
     const selectedBg = isDark ? "rgba(59,130,246,0.16)" : "rgba(37,99,235,0.10)";
     const accent = "#2563eb";
 
@@ -375,7 +387,7 @@ export default function CommandPalette() {
                         exit={{ opacity: 0, y: 16, scale: 0.95 }}
                         transition={{ type: "spring", stiffness: 400, damping: 28 }}
                         style={{
-                            backgroundColor: isDark ? "#171717" : "#1c1917",
+                            backgroundColor: isDark ? "#141414" : "#1c1917",
                             color: "#fafafa",
                             border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.08)"}`,
                         }}

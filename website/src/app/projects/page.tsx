@@ -11,12 +11,13 @@ import { useState } from 'react';
 import { ProjectDescription } from '../../components/ProjectDescription';
 import Webring from '../../components/Webring';
 import { ProjectVideo } from '../../components/ProjectVideo';
+import { mouseOnly, PRESS } from '../../styles/motion';
 
 const ProjectTitle = ({ project, isDark }: { project: any, isDark: boolean }) => (
     <h3 style={{
         fontSize: '1.25rem',
         fontWeight: '700',
-        color: isDark ? 'white' : '#1c1917',
+        color: isDark ? '#f5f5f5' : '#1c1917',
         marginBottom: '6px'
     }}>
         {project.title}
@@ -115,7 +116,7 @@ export default function ProjectsPage() {
                             <div style={{
                                 position: 'absolute',
                                 left: '16px',
-                                color: isDark ? '#9ca3af' : '#6b7280',
+                                color: isDark ? '#8f8f8f' : '#6b7280',
                                 display: 'flex',
                                 alignItems: 'center',
                                 pointerEvents: 'none'
@@ -134,12 +135,12 @@ export default function ProjectsPage() {
                                     width: '100%',
                                     padding: '14px 16px 14px 48px',
                                     borderRadius: '12px',
-                                    backgroundColor: isDark ? '#171717' : 'white',
-                                    border: `1px solid ${isDark ? '#262626' : '#e5e7eb'}`,
-                                    color: isDark ? 'white' : '#1c1917',
+                                    backgroundColor: isDark ? '#141414' : 'white',
+                                    border: `1px solid ${isDark ? '#1b1b1b' : '#e5e7eb'}`,
+                                    color: isDark ? '#f5f5f5' : '#1c1917',
                                     fontSize: '1rem',
                                     outline: 'none',
-                                    transition: 'all 0.2s ease',
+                                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
                                     boxShadow: isDark ? 'none' : '0 2px 4px rgba(0,0,0,0.02)'
                                 }}
                                 onFocus={(e) => {
@@ -159,7 +160,7 @@ export default function ProjectsPage() {
                                         right: '16px',
                                         background: 'transparent',
                                         border: 'none',
-                                        color: isDark ? '#9ca3af' : '#6b7280',
+                                        color: isDark ? '#8f8f8f' : '#6b7280',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -205,8 +206,8 @@ export default function ProjectsPage() {
                                             <div style={{
                                                 width: '100%',
                                                 overflow: 'hidden',
-                                                borderBottom: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                                                backgroundColor: project.solidColor || (isDark ? '#171717' : '#f8f9fa'),
+                                                borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
+                                                backgroundColor: project.solidColor || (isDark ? '#141414' : '#f8f9fa'),
                                                 aspectRatio: '2 / 1',
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -251,8 +252,8 @@ export default function ProjectsPage() {
                                                             gap: '6px',
                                                             padding: '4px 10px',
                                                             borderRadius: '9999px',
-                                                            backgroundColor: isDark ? 'rgba(38, 38, 38, 0.6)' : '#f3f4f6',
-                                                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                                                            backgroundColor: isDark ? 'rgba(28, 28, 28, 0.65)' : '#f3f4f6',
+                                                            border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
                                                             flexShrink: 0
                                                         }}>
                                                             <div
@@ -265,7 +266,7 @@ export default function ProjectsPage() {
                                                                 }}
                                                             />
                                                             <span style={{
-                                                                color: isDark ? '#d1d5db' : '#4b5563',
+                                                                color: isDark ? '#c8c8c8' : '#4b5563',
                                                                 fontSize: '0.75rem',
                                                                 fontWeight: '500',
                                                                 whiteSpace: 'nowrap'
@@ -274,7 +275,7 @@ export default function ProjectsPage() {
                                                     </div>
                                                     <p style={{
                                                         fontSize: '0.875rem',
-                                                        color: isDark ? '#9ca3af' : '#6b7280',
+                                                        color: isDark ? '#8f8f8f' : '#6b7280',
                                                         lineHeight: '1.6',
                                                         margin: 0
                                                     }}>
@@ -293,11 +294,11 @@ export default function ProjectsPage() {
                                                                 display: 'inline-block',
                                                                 padding: '4px 12px',
                                                                 borderRadius: '6px',
-                                                                backgroundColor: isDark ? 'rgba(55, 65, 81, 0.5)' : '#f3f4f6',
-                                                                color: isDark ? '#d1d5db' : '#374151',
+                                                                backgroundColor: isDark ? 'rgba(52, 52, 52, 0.55)' : '#f3f4f6',
+                                                                color: isDark ? '#c8c8c8' : '#374151',
                                                                 fontSize: '0.75rem',
                                                                 fontWeight: '500',
-                                                                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`
+                                                                border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`
                                                             }}
                                                         >
                                                             {tech}
@@ -320,13 +321,13 @@ export default function ProjectsPage() {
                                                                         ? '0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.4), 0 0 75px rgba(59, 130, 246, 0.2)'
                                                                         : '0 0 25px rgba(37, 99, 235, 0.6), 0 0 50px rgba(37, 99, 235, 0.3), 0 0 75px rgba(37, 99, 235, 0.15)'
                                                                 }}
-                                                                whileTap={{ scale: 0.98 }}
+                                                                whileTap={PRESS}
                                                                 transition={{ duration: 0.2 }}
                                                                 style={{
                                                                     padding: '6px 12px',
                                                                     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                                                                    color: isDark ? '#e5e7eb' : '#1f2937',
-                                                                    border: `1px solid ${isDark ? '#374151' : '#d1d5db'}`,
+                                                                    color: isDark ? '#e6e6e6' : '#1f2937',
+                                                                    border: `1px solid ${isDark ? '#2a2a2a' : '#d1d5db'}`,
                                                                     borderRadius: '8px',
                                                                     fontSize: '0.75rem',
                                                                     fontWeight: '500',
@@ -334,7 +335,7 @@ export default function ProjectsPage() {
                                                                     alignItems: 'center',
                                                                     gap: '6px',
                                                                     textDecoration: 'none',
-                                                                    transition: 'all 0.2s ease'
+                                                                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease'
                                                                 }}
                                                             >
                                                                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -354,12 +355,12 @@ export default function ProjectsPage() {
                                                                         ? '0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.4), 0 0 75px rgba(59, 130, 246, 0.2)'
                                                                         : '0 0 25px rgba(37, 99, 235, 0.6), 0 0 50px rgba(37, 99, 235, 0.3), 0 0 75px rgba(37, 99, 235, 0.15)'
                                                                 }}
-                                                                whileTap={{ scale: 0.98 }}
+                                                                whileTap={PRESS}
                                                                 transition={{ duration: 0.2 }}
                                                                 style={{
                                                                     padding: '6px 12px',
-                                                                    backgroundColor: isDark ? '#374151' : '#f3f4f6',
-                                                                    color: isDark ? 'white' : '#1f2937',
+                                                                    backgroundColor: isDark ? '#2a2a2a' : '#f3f4f6',
+                                                                    color: isDark ? '#f5f5f5' : '#1f2937',
                                                                     borderRadius: '8px',
                                                                     fontSize: '0.75rem',
                                                                     fontWeight: '500',
@@ -367,8 +368,8 @@ export default function ProjectsPage() {
                                                                     alignItems: 'center',
                                                                     gap: '6px',
                                                                     textDecoration: 'none',
-                                                                    border: `1px solid ${isDark ? '#374151' : '#d1d5db'}`,
-                                                                    transition: 'all 0.2s ease'
+                                                                    border: `1px solid ${isDark ? '#2a2a2a' : '#d1d5db'}`,
+                                                                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease'
                                                                 }}
                                                             >
                                                                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
@@ -394,7 +395,7 @@ export default function ProjectsPage() {
                                 style={{
                                     textAlign: 'center',
                                     padding: '48px 0',
-                                    color: isDark ? '#9ca3af' : '#6b7280'
+                                    color: isDark ? '#8f8f8f' : '#6b7280'
                                 }}
                             >
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px', opacity: 0.5 }}>
@@ -434,26 +435,26 @@ export default function ProjectsPage() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '6px',
-                                color: isDark ? '#9ca3af' : '#6b7280',
+                                color: isDark ? '#8f8f8f' : '#6b7280',
                                 fontSize: '0.75rem',
                                 fontWeight: '500',
                                 padding: '6px 12px',
                                 borderRadius: '8px',
                                 border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-                                backgroundColor: isDark ? '#171717' : 'white',
-                                transition: 'all 0.2s ease',
+                                backgroundColor: isDark ? '#141414' : 'white',
+                                transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
                                 textDecoration: 'none'
                             }}
-                            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                                e.currentTarget.style.color = isDark ? 'white' : '#1c1917';
+                            onPointerEnter={mouseOnly((e: React.PointerEvent<HTMLAnchorElement>) => {
+                                e.currentTarget.style.color = isDark ? '#f5f5f5' : '#1c1917';
                                 e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
                                 e.currentTarget.style.transform = 'translateY(-1px)';
-                            }}
-                            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                                e.currentTarget.style.color = isDark ? '#9ca3af' : '#6b7280';
+                            })}
+                            onPointerLeave={mouseOnly((e: React.PointerEvent<HTMLAnchorElement>) => {
+                                e.currentTarget.style.color = isDark ? '#8f8f8f' : '#6b7280';
                                 e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
                                 e.currentTarget.style.transform = 'translateY(0)';
-                            }}
+                            })}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="19" y1="12" x2="5" y2="12"></line>

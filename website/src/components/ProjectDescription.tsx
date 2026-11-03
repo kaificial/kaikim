@@ -11,6 +11,7 @@ import { useTheme } from "./ThemeContext";
 import { useUISound } from "../hooks/use-ui-sound";
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-async';
 import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { mouseOnly } from '../styles/motion';
 
 interface ProjectDescriptionProps {
     content: string;
@@ -30,7 +31,7 @@ const ZoomableImage = ({ src, alt, isDark, ...props }: any) => {
                     borderRadius: '12px',
                     cursor: 'zoom-in',
                     position: 'relative',
-                    backgroundColor: isDark ? '#111110' : '#ffffff'
+                    backgroundColor: isDark ? '#0c0c0c' : '#ffffff'
                 }}
                 onClick={() => { playClick(); setIsZoomed(true); }}
             >
@@ -44,8 +45,8 @@ const ZoomableImage = ({ src, alt, isDark, ...props }: any) => {
                         borderRadius: '8px',
                         transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    onPointerEnter={mouseOnly((e) => { e.currentTarget.style.transform = 'scale(1.02)'; })}
+                    onPointerLeave={mouseOnly((e) => { e.currentTarget.style.transform = 'scale(1)'; })}
                     {...props}
                 />
             </div>
@@ -64,7 +65,7 @@ const ZoomableImage = ({ src, alt, isDark, ...props }: any) => {
                             left: 0,
                             width: '100vw',
                             height: '100vh',
-                            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+                            backgroundColor: isDark ? 'rgba(8, 8, 8, 0.88)' : 'rgba(255, 255, 255, 0.9)',
                             backdropFilter: 'blur(16px)',
                             WebkitBackdropFilter: 'blur(16px)',
                             zIndex: 99999,
@@ -104,7 +105,7 @@ export const ProjectDescription: React.FC<ProjectDescriptionProps> = ({ content 
         <div style={{
             fontSize: '0.875rem',
             lineHeight: '1.7',
-            color: isDark ? '#d1d5db' : '#4b5563',
+            color: isDark ? '#c8c8c8' : '#4b5563',
             marginBottom: '16px'
         }}>
             <ReactMarkdown
@@ -118,7 +119,7 @@ export const ProjectDescription: React.FC<ProjectDescriptionProps> = ({ content 
                             fontWeight: '700',
                             marginTop: '48px',
                             marginBottom: '8px',
-                            color: isDark ? 'white' : '#1c1917',
+                            color: isDark ? '#f5f5f5' : '#1c1917',
                             letterSpacing: '-0.02em'
                         }} {...props} />
                     ),
@@ -126,7 +127,7 @@ export const ProjectDescription: React.FC<ProjectDescriptionProps> = ({ content 
                         <hr style={{
                             margin: '0 0 20px',
                             border: 'none',
-                            borderTop: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                            borderTop: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
                         }} />
                     ),
                     h3: ({ node, ...props }) => (
@@ -135,11 +136,11 @@ export const ProjectDescription: React.FC<ProjectDescriptionProps> = ({ content 
                             fontWeight: '600',
                             marginTop: '32px',
                             marginBottom: '16px',
-                            color: isDark ? 'white' : '#1c1917',
+                            color: isDark ? '#f5f5f5' : '#1c1917',
                             letterSpacing: '-0.02em'
                         }} {...props} />
                     ),
-                    strong: ({ node, ...props }) => <strong style={{ fontWeight: '600', color: isDark ? 'white' : '#111827' }} {...props} />,
+                    strong: ({ node, ...props }) => <strong style={{ fontWeight: '600', color: isDark ? '#f5f5f5' : '#111827' }} {...props} />,
                     ul: ({ node, ...props }) => <ul style={{ marginLeft: '1.5rem', marginBottom: '16px', listStyleType: 'disc' }} {...props} />,
                     li: ({ node, ...props }) => <li style={{ marginBottom: '8px' }} {...props} />,
                     code: ({ node, inline, className, children, ...props }: any) => {
@@ -156,34 +157,34 @@ export const ProjectDescription: React.FC<ProjectDescriptionProps> = ({ content 
                                     padding: '16px',
                                     fontSize: '0.8125rem',
                                     margin: '24px 0',
-                                    backgroundColor: isDark ? '#111827' : '#f8f8f8',
-                                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`
+                                    backgroundColor: isDark ? '#101010' : '#f8f8f8',
+                                    border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`
                                 }}
                             />
                         ) : (
                             <code className={className} style={{
-                                backgroundColor: isDark ? '#1f2937' : '#f3f4f6',
+                                backgroundColor: isDark ? '#181818' : '#f3f4f6',
                                 padding: '2px 6px',
                                 borderRadius: '4px',
                                 fontFamily: 'var(--font-mono)',
                                 fontSize: '0.8125rem',
-                                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                                color: isDark ? '#e5e7eb' : '#1f2937'
+                                border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
+                                color: isDark ? '#e6e6e6' : '#1f2937'
                             }} {...props}>
                                 {children}
                             </code>
                         );
                     },
                     table: ({ node, ...props }) => (
-                        <div style={{ overflowX: 'auto', marginBottom: '32px', borderRadius: '8px', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, backgroundColor: isDark ? '#111110' : '#ffffff' }}>
+                        <div style={{ overflowX: 'auto', marginBottom: '32px', borderRadius: '8px', border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`, backgroundColor: isDark ? '#0c0c0c' : '#ffffff' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }} {...props} />
                         </div>
                     ),
-                    thead: ({ node, ...props }) => <thead style={{ backgroundColor: isDark ? '#1f2937' : '#f9fafb', borderBottom: `1px solid ${isDark ? '#374151' : '#e5e7eb'}` }} {...props} />,
+                    thead: ({ node, ...props }) => <thead style={{ backgroundColor: isDark ? '#181818' : '#f9fafb', borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}` }} {...props} />,
                     tbody: ({ node, ...props }) => <tbody {...props} />,
-                    tr: ({ node, ...props }) => <tr style={{ borderBottom: `1px solid ${isDark ? '#374151' : '#e5e7eb'}` }} {...props} />,
-                    th: ({ node, ...props }) => <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: isDark ? 'white' : '#111827' }} {...props} />,
-                    td: ({ node, ...props }) => <td style={{ padding: '12px 16px', verticalAlign: 'top', color: isDark ? '#d1d5db' : '#4b5563' }} {...props} />,
+                    tr: ({ node, ...props }) => <tr style={{ borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}` }} {...props} />,
+                    th: ({ node, ...props }) => <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: isDark ? '#f5f5f5' : '#111827' }} {...props} />,
+                    td: ({ node, ...props }) => <td style={{ padding: '12px 16px', verticalAlign: 'top', color: isDark ? '#c8c8c8' : '#4b5563' }} {...props} />,
                     img: ({ node, src, alt, ...props }) => (
                         <ZoomableImage src={src} alt={alt} isDark={isDark} {...props} />
                     ),

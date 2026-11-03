@@ -161,12 +161,12 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                     style={{
                         width: '14px',
                         height: '14px',
-                        border: `2px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                        borderTopColor: isDark ? '#6b7280' : '#9ca3af',
+                        border: `2px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
+                        borderTopColor: isDark ? '#6e6e6e' : '#9ca3af',
                         borderRadius: '50%',
                     }}
                 />
-                <span style={{ color: isDark ? '#6b7280' : '#9ca3af', fontSize: '0.8125rem' }}>
+                <span style={{ color: isDark ? '#6e6e6e' : '#9ca3af', fontSize: '0.8125rem' }}>
                     Loading...
                 </span>
             </div>
@@ -198,7 +198,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                         alignItems: 'center',
                         gap: '8px',
                         textDecoration: 'none',
-                        color: isDark ? '#e5e7eb' : '#1c1917',
+                        color: isDark ? '#e6e6e6' : '#1c1917',
                         position: 'relative',
                     }}
                     whileHover="hover"
@@ -236,7 +236,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                         alignItems: 'center',
                         gap: '20px',
                         fontSize: '0.8125rem',
-                        color: isDark ? '#9ca3af' : '#6b7280',
+                        color: isDark ? '#8f8f8f' : '#6b7280',
                     }}
                 >
                     <motion.span
@@ -244,7 +244,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 }}
                     >
-                        <strong style={{ color: isDark ? '#e5e7eb' : '#1c1917' }}>
+                        <strong style={{ color: isDark ? '#e6e6e6' : '#1c1917' }}>
                             {totalContributions.toLocaleString()}
                         </strong> contributions
                     </motion.span>
@@ -253,7 +253,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8 }}
                     >
-                        <strong style={{ color: isDark ? '#e5e7eb' : '#1c1917' }}>
+                        <strong style={{ color: isDark ? '#e6e6e6' : '#1c1917' }}>
                             {currentStreak}
                         </strong> day streak
                     </motion.span>
@@ -262,7 +262,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.0 }}
                     >
-                        <strong style={{ color: isDark ? '#e5e7eb' : '#1c1917' }}>
+                        <strong style={{ color: isDark ? '#e6e6e6' : '#1c1917' }}>
                             {longestStreak}
                         </strong> best
                     </motion.span>
@@ -273,7 +273,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 1.2 }}
                             >
-                                <strong style={{ color: isDark ? '#e5e7eb' : '#1c1917' }}>
+                                <strong style={{ color: isDark ? '#e6e6e6' : '#1c1917' }}>
                                     {userStats.publicRepos}
                                 </strong> repos
                             </motion.span>
@@ -282,7 +282,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 1.4 }}
                             >
-                                <strong style={{ color: isDark ? '#e5e7eb' : '#1c1917' }}>
+                                <strong style={{ color: isDark ? '#e6e6e6' : '#1c1917' }}>
                                     {userStats.followers}
                                 </strong> followers
                             </motion.span>
@@ -378,7 +378,7 @@ export function GitHubActivity({ username, shouldStart = true }: GitHubActivityP
                     gap: '4px',
                     marginTop: '8px',
                     fontSize: '0.6875rem',
-                    color: isDark ? '#6b7280' : '#9ca3af',
+                    color: isDark ? '#6e6e6e' : '#9ca3af',
                 }}
             >
                 <span style={{ marginRight: '4px' }}>Less</span>

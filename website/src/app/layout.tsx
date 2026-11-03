@@ -89,7 +89,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Kai Kim',
         description: "what i've been building: Clairo (AI medical assistant), Rooke (chess AI with 3D visualization), Scribe (handwritten LaTeX converter). CS @ Queen's University, Toronto.",
-        creator: '@kaificial',
+        creator: '@kaikimto',
         images: ['/og-image.png'],
     },
 };

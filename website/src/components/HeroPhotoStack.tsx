@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUISound } from "@/hooks/use-ui-sound";
+import { mouseOnly } from '../styles/motion';
+import { sfx } from '../lib/sfx';
 
 
 
@@ -31,12 +32,11 @@ const STACK = [
 export default function HeroPhotoStack({ isDark }: { isDark: boolean }) {
     const [active, setActive] = useState(0);
     const [hovered, setHovered] = useState(false);
-    const { playClick } = useUISound();
     const n = PHOTOS.length;
 
     const advance = () => {
         setActive((a) => (a + 1) % n);
-        playClick();
+        sfx.paper();
     };
 
     const tooltipBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
@@ -53,8 +53,8 @@ export default function HeroPhotoStack({ isDark }: { isDark: boolean }) {
                     advance();
                 }
             }}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            onPointerEnter={mouseOnly(() => setHovered(true))}
+            onPointerLeave={mouseOnly(() => setHovered(false))}
             style={{
                 position: "relative",
                 width: "112px",
@@ -77,8 +77,8 @@ export default function HeroPhotoStack({ isDark }: { isDark: boolean }) {
                             position: "absolute",
                             top: "-34px",
                             left: "-8px",
-                            backgroundColor: isDark ? "#1f2937" : "white",
-                            color: isDark ? "white" : "#1f2937",
+                            backgroundColor: isDark ? "#181818" : "white",
+                            color: isDark ? "#f5f5f5" : "#1f2937",
                             padding: "4px 10px",
                             borderRadius: "8px",
                             fontSize: "0.75rem",
@@ -98,7 +98,7 @@ export default function HeroPhotoStack({ isDark }: { isDark: boolean }) {
                                 left: "16px",
                                 width: "10px",
                                 height: "10px",
-                                backgroundColor: isDark ? "#1f2937" : "white",
+                                backgroundColor: isDark ? "#181818" : "white",
                                 transform: "rotate(45deg)",
                                 borderBottom: `1px solid ${tooltipBorder}`,
                                 borderRight: `1px solid ${tooltipBorder}`,
@@ -136,8 +136,8 @@ export default function HeroPhotoStack({ isDark }: { isDark: boolean }) {
                             zIndex: n - depth,
                             borderRadius: "18px",
                             overflow: "hidden",
-                            backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                            border: `2px solid ${isDark ? "#374151" : "#ffffff"}`,
+                            backgroundColor: isDark ? "#181818" : "#ffffff",
+                            border: `2px solid ${isDark ? "#2a2a2a" : "#ffffff"}`,
                             boxShadow:
                                 depth === 0
                                     ? isDark
@@ -175,7 +175,7 @@ export default function HeroPhotoStack({ isDark }: { isDark: boolean }) {
                     minWidth: "30px",
                     padding: "2px 6px",
                     borderRadius: "9999px",
-                    backgroundColor: isDark ? "#171717" : "#1c1917",
+                    backgroundColor: isDark ? "#141414" : "#1c1917",
                     color: "#fafafa",
                     fontSize: "0.6rem",
                     fontWeight: 700,

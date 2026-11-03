@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUISound } from '../hooks/use-ui-sound';
+import { sfx } from '../lib/sfx';
 
 interface ProjectVideoProps {
     src: string;
@@ -36,7 +36,6 @@ export const ProjectVideo = ({
     // Set when the viewer clicks to pause, so auto-loop won't restart it.
     const pausedByUserRef = useRef(false);
     const wasPlayingRef = useRef(false);
-    const { playClick } = useUISound();
 
     const play = useCallback(() => {
         const video = videoRef.current;
@@ -76,10 +75,10 @@ export const ProjectVideo = ({
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        playClick();
 
         const video = videoRef.current;
         if (!video) return;
+        sfx.toggle(video.paused);
 
         if (video.paused) {
             pausedByUserRef.current = false;
