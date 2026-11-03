@@ -12,6 +12,7 @@ import InteractiveGrid from "../components/InteractiveGrid";
 import CommandPalette from "../components/CommandPalette";
 import FloatingDock from "../components/FloatingDock";
 import CustomCursor from "../components/CustomCursor";
+import { SfxBoot } from "../lib/sfx/react";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -170,6 +171,7 @@ export default function RootLayout({
                         <CommandPalette />
                         <FloatingDock />
                         <CustomCursor />
+                        <SfxBoot />
                     </AudioProvider>
                 </ThemeProvider>
             </body>

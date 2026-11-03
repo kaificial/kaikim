@@ -1,15 +1,16 @@
 "use client";
 
-import useSound from 'use-sound';
+import { sfx } from '../lib/sfx';
 
-export const useUISound = () => {
-    const [playClick] = useSound('/sounds/sound-2.mp3', { volume: 0.35 });
-    const [playOn] = useSound('/assets/music/drop_sound_effect.mp3', { volume: 0.3 });
-    const [playOff] = useSound('/assets/music/drop_sound_effect.mp3', { volume: 0.3 });
-
-    return {
-        playClick,
-        playOn,
-        playOff,
-    };
+const api = {
+    /** a normal button press (panned to the last pointer spot) */
+    playClick: () => sfx.press(),
+    playOn: () => sfx.toggle(true),
+    playOff: () => sfx.toggle(false),
 };
+
+/**
+ * old entry point, kept so existing code keeps working. for new stuff use `sfx.*` from `lib/sfx`, or
+ * `data-sfx="press"` on the element
+ */
+export const useUISound = () => api;
