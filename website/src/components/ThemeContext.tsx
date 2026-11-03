@@ -46,7 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const wave = runThemeTransition(() => {
             flushSync(() => setIsDark(newTheme));
             document.documentElement.classList.toggle("dark", newTheme);
-        });
+        }, newTheme);
         if (wave) sfx.themeWave(newTheme, wave);
 
         localStorage.setItem("theme", newTheme ? "dark" : "light");

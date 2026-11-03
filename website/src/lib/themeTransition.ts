@@ -6,13 +6,17 @@
  * lag so the edge looks pixelated.
  *
  * uses the view transitions api: the old and new page are real snapshots, and the new one shows
- * through a mask redrawn every frame. no api or reduced motion = instant switch
+ * through a mask. every frame of the wave is drawn up front into one tall sprite, then a plain css
+ * steps() animation flips through it, so nothing runs in js mid-transition (mobile browsers don't
+ * reliably pick up style changes on the transition while it's playing). no api or reduced motion =
+ * instant switch
  */
 
 const CELL = 24; // matches --grid-size
-const MASK_PX = 10; // mask pixels per tile (the mask gets scaled up to the screen)
+const FRAMES = 28; // frames in the sprite
 const RAMP = 0.18; // how much of the run each tile takes to grow
 const JITTER = 0.12; // random lag per tile, as a fraction of the run
+const MAX_SPRITE_PX = 3_000_000; // small enough to build fast, well under safari's canvas limit
 export const THEME_WAVE_MS = 1100;
 
 let lastPointer: { x: number; y: number; t: number } | null = null;
@@ -24,7 +28,7 @@ const rememberPointer = () => {
 };
 rememberPointer();
 
-/** where the wave starts: the click that caused it, or top centre for keyboard/⌘K */
+/** where the wave starts: the tap/click that caused it, or top centre for keyboard/⌘K */
 const originPoint = () => {
     if (lastPointer && performance.now() - lastPointer.t < 1000) return { x: lastPointer.x, y: lastPointer.y };
     return { x: window.innerWidth / 2, y: 0 };
@@ -36,10 +40,11 @@ type ViewTransitionLike = { ready: Promise<void>; finished: Promise<void> };
 type DocWithVT = Document & { startViewTransition?: (cb: () => void) => ViewTransitionLike };
 
 /**
- * run `apply` (has to update the dom right away) as a tile wave. returns how long the wave runs (0 if
- * it switched instantly)
+ * run `apply` (has to update the dom right away) as a tile wave. the dark page is always the one
+ * that moves: going dark it grows out of the button, going light it shrinks back into it.
+ * returns how long the wave runs (0 if it switched instantly)
  */
-export const runThemeTransition = (apply: () => void): number => {
+export const runThemeTransition = (apply: () => void, toDark: boolean): number => {
     const doc = document as DocWithVT;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!doc.startViewTransition || reduce) {
@@ -47,17 +52,22 @@ export const runThemeTransition = (apply: () => void): number => {
         return 0;
     }
 
+    // on phones the snapshot is the full screen height, taller than innerHeight while the url bar
+    // shows, so cover a bit extra or the strip behind the url bar pops at the end
     const w = window.innerWidth;
-    const h = window.innerHeight;
+    const h = Math.max(window.innerHeight, document.documentElement.clientHeight) + 160;
     const cols = Math.ceil(w / CELL);
     const rows = Math.ceil(h / CELL);
+    // pixels per tile in the sprite: as sharp as the size limit allows
+    const px = Math.max(2, Math.min(12, Math.floor(Math.sqrt(MAX_SPRITE_PX / (cols * rows * FRAMES)))));
+
     const canvas = document.createElement('canvas');
-    canvas.width = cols * MASK_PX;
-    canvas.height = rows * MASK_PX;
+    canvas.width = cols * px;
+    canvas.height = rows * px * FRAMES;
     const ctx = canvas.getContext('2d');
     if (!ctx) { apply(); return 0; }
 
-    // each tile's start time: distance from the click plus a little noise
+    // each tile's start time: distance from the tap plus a little noise
     const o = originPoint();
     const far = Math.max(Math.hypot(o.x, o.y), Math.hypot(w - o.x, o.y), Math.hypot(o.x, h - o.y), Math.hypot(w - o.x, h - o.y));
     const starts = new Float32Array(cols * rows);
@@ -68,56 +78,70 @@ export const runThemeTransition = (apply: () => void): number => {
         }
     }
 
-    const style = document.createElement('style');
-    const setMask = (url: string) => {
-        style.textContent = `
-            ::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
-            ::view-transition-old(root) { animation: none; }
-            ::view-transition-new(root) {
-                animation: theme-wave-hold ${THEME_WAVE_MS}ms linear both;
-                -webkit-mask: url(${url}) 0 0 / ${cols * CELL}px ${rows * CELL}px no-repeat;
-                mask: url(${url}) 0 0 / ${cols * CELL}px ${rows * CELL}px no-repeat;
-            }
-            @keyframes theme-wave-hold { from { opacity: 1; } to { opacity: 1; } }
-        `;
-    };
-
-    const draw = (progress: number) => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
+    // draw every frame of the wave, stacked top to bottom
+    ctx.fillStyle = '#000';
+    const frameH = rows * px;
+    for (let f = 0; f < FRAMES; f++) {
+        const progress = f / (FRAMES - 1);
+        const top = f * frameH;
         for (let i = 0; i < starts.length; i++) {
             const p = (progress - starts[i]) / RAMP;
             if (p <= 0) continue;
-            const s = p >= 1 ? MASK_PX : Math.max(1, Math.round(MASK_PX * easeOut(p)));
-            const c = i % cols;
-            const r = (i / cols) | 0;
-            const off = (MASK_PX - s) / 2;
-            ctx.fillRect(c * MASK_PX + off, r * MASK_PX + off, s, s);
+            const s = p >= 1 ? px : Math.max(1, Math.round(px * easeOut(p)));
+            const off = (px - s) / 2;
+            ctx.fillRect((i % cols) * px + off, top + ((i / cols) | 0) * px + off, s, s);
         }
-        setMask(canvas.toDataURL());
-    };
+    }
 
-    // start fully masked so the first frame still shows the old theme
-    draw(0);
+    let url: string;
+    try { url = canvas.toDataURL(); } catch { apply(); return 0; }
+
+    // the sprite is shown one frame per screen. steps(FRAMES, jump-none) lands on exactly FRAMES
+    // positions, first to last, so every step is one whole frame (FRAMES - 1 here drifts off frame).
+    // going dark: the new (dark) page shows through the growing tiles.
+    // going light: the old (dark) page sits on top and the same wave plays backwards,
+    // so the dark tiles pull back in toward the button
+    const screenW = cols * CELL;
+    const screenH = rows * CELL;
+    const lastY = -(FRAMES - 1) * screenH;
+    const moving = toDark ? 'new' : 'old';
+    const still = toDark ? 'old' : 'new';
+    const style = document.createElement('style');
+    style.textContent = `
+        ::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
+        ::view-transition-${still}(root) { animation: none; }
+        ::view-transition-old(root) { z-index: ${toDark ? 0 : 1}; }
+        ::view-transition-${moving}(root) {
+            -webkit-mask-image: url(${url});
+            mask-image: url(${url});
+            -webkit-mask-size: ${screenW}px ${screenH * FRAMES}px;
+            mask-size: ${screenW}px ${screenH * FRAMES}px;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: 0 0;
+            mask-position: 0 0;
+            animation: theme-wave ${THEME_WAVE_MS}ms steps(${FRAMES}, jump-none) both ${toDark ? 'normal' : 'reverse'};
+        }
+        @keyframes theme-wave {
+            from { -webkit-mask-position: 0 0; mask-position: 0 0; }
+            to { -webkit-mask-position: 0 ${lastY}px; mask-position: 0 ${lastY}px; }
+        }
+    `;
     document.head.appendChild(style);
     // otherwise colour transitions get caught mid-fade in the new snapshot
     document.documentElement.classList.add('theme-switching');
 
-    const transition = doc.startViewTransition(apply);
-    let raf = 0;
-    transition.ready.then(() => {
-        const t0 = performance.now();
-        const frame = () => {
-            const progress = Math.min(1, (performance.now() - t0) / THEME_WAVE_MS);
-            draw(progress);
-            if (progress < 1) raf = requestAnimationFrame(frame);
-        };
-        raf = requestAnimationFrame(frame);
-    }).catch(() => { /* transition skipped */ });
-    transition.finished.finally(() => {
-        cancelAnimationFrame(raf);
+    const cleanup = () => {
         style.remove();
         document.documentElement.classList.remove('theme-switching');
-    });
+    };
+    try {
+        const transition = doc.startViewTransition(apply);
+        transition.finished.then(cleanup, cleanup);
+    } catch {
+        cleanup();
+        apply();
+        return 0;
+    }
     return THEME_WAVE_MS;
 };
