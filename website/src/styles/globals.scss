@@ -125,6 +125,66 @@ html {
     }
 }
 
+// stuff slides in like cards being dealt as you scroll, tilting in from alternating sides.
+// it follows the scrollbar, so scrolling back up plays it in reverse.
+// uses translate/rotate/scale instead of transform so it doesn't clash with framer motion.
+// add data-scroll-fx to animate something, or data-scroll-fx-group to animate its children
+@keyframes scroll-deal {
+    from {
+        opacity: 0;
+        translate: calc(var(--deal-dir, 1) * -22px) 64px;
+        rotate: calc(var(--deal-dir, 1) * -3deg);
+        scale: 0.94;
+        filter: blur(8px);
+    }
+
+    45% {
+        opacity: 1;
+    }
+
+    65% {
+        filter: blur(0px);
+    }
+
+    to {
+        opacity: 1;
+        translate: none;
+        rotate: none;
+        scale: none;
+        filter: none;
+    }
+}
+
+@supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+        main :is(section h2, .experience-item, [data-scroll-fx]),
+        main [data-scroll-fx-group] > * {
+            transform-origin: 0% 100%;
+            animation: scroll-deal linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 85%;
+        }
+
+        main [data-scroll-fx-group] {
+            view-timeline: --deal block;
+        }
+
+        main [data-scroll-fx-group] > * {
+            animation-timeline: --deal;
+        }
+
+        // every other item comes in from the other side
+        main :is(.experience-item, [data-scroll-fx], [data-scroll-fx-group]):nth-child(even) {
+            --deal-dir: -1;
+        }
+
+        main :is(.experience-item, [data-scroll-fx]):nth-child(even),
+        main [data-scroll-fx-group]:nth-child(even) > * {
+            transform-origin: 100% 100%;
+        }
+    }
+}
+
 // slim, quiet scrollbars for mouse and trackpad users. touch screens keep their own overlay bars
 @media (hover: hover) and (pointer: fine) {
     * {

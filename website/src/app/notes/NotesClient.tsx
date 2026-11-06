@@ -284,6 +284,7 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
                         <motion.button
                             key={item.id}
                             type="button"
+                            data-scroll-fx-group
                             layout={!reduceMotion}
                             {...enter(index)}
                             whileHover={reduceMotion ? undefined : HOVER_CARD}

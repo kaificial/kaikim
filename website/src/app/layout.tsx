@@ -8,6 +8,7 @@ import Header from "../components/Header";
 import { ThemeProvider } from "../components/ThemeContext";
 import { AudioProvider } from "../components/AudioContext";
 import ScrollToTop from "../components/ScrollToTop";
+import SmoothScroll from "../components/SmoothScroll";
 import InteractiveGrid from "../components/InteractiveGrid";
 import CommandPalette from "../components/CommandPalette";
 import FloatingDock from "../components/FloatingDock";
@@ -166,6 +167,7 @@ export default function RootLayout({
                     <AudioProvider>
                     <MotionProvider>
                         <InteractiveGrid />
+                        <SmoothScroll />
                         <ScrollToTop />
                         <Header />
                         <main>

@@ -8,6 +8,14 @@ import { useTheme } from './ThemeContext';
 import { sfx } from '../lib/sfx';
 import { SpeakerIcon, setSfxMuted, useSfxMuted } from '../lib/sfx/react';
 import { HOVER_ICON, mouseOnly, PRESS, TOOLTIP } from '../styles/motion';
+import { getLenis } from './SmoothScroll';
+
+// smooth scroll back to the top
+const scrollToTop = () => {
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(0, { duration: 1.1 });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 interface TooltipProps {
     text: string;
@@ -81,12 +89,12 @@ export default function FloatingDock() {
     const handleHomeClick = () => {
         if (pathname === '/') {
             // Already on home page just scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollToTop();
         } else {
             // Navigate to home and scroll to top
             router.push('/');
             setTimeout(() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollToTop();
             }, 100);
         }
     };
@@ -94,23 +102,23 @@ export default function FloatingDock() {
     const handleProjectsClick = () => {
         if (pathname === '/projects') {
             // Already on projects page just scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollToTop();
         } else {
             // Navigate to projects and scroll to top
             router.push('/projects');
             setTimeout(() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollToTop();
             }, 100);
         }
     };
 
     const handleWritingClick = () => {
         if (pathname === '/writing') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollToTop();
         } else {
             router.push('/writing');
             setTimeout(() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollToTop();
             }, 100);
         }
     };

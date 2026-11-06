@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { getLenis } from './SmoothScroll';
 
 // scrolls to top whenever the route changes
 // also tracks the previous path for "back to [page]" buttons
@@ -16,7 +17,10 @@ export default function ScrollToTop() {
         }
         prevPathRef.current = pathname;
 
-        window.scrollTo(0, 0);
+        // go through lenis so the old page's scroll doesn't keep going
+        const lenis = getLenis();
+        if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+        else window.scrollTo(0, 0);
     }, [pathname]);
 
     return null;

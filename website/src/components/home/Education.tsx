@@ -18,7 +18,7 @@ export const Education = () => {
         >
             <SectionHeading marginBottom="8px">{rt('Education', 6)}</SectionHeading>
 
-            <div style={{
+            <div data-scroll-fx style={{
                 border: `1px solid ${cssVar.chipBorder}`,
                 backgroundColor: cssVar.surface,
                 borderRadius: '12px',

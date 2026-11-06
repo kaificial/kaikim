@@ -43,7 +43,7 @@ const SkillGroup = ({ title, titleSlot, chipSlot, skills }: (typeof GROUPS)[numb
     const { isDark } = useTheme();
 
     return (
-        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+        <motion.div data-scroll-fx-group variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: '500', marginBottom: '8px', color: cssVar.textStrong }}>{rt(title, titleSlot)}</h3>
             <motion.div
                 style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}
