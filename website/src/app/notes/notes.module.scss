@@ -5,126 +5,17 @@ $phone: 639px;
 $narrow: 479px;
 $touch: "(hover: none) and (pointer: coarse)";
 
-/* summary: totals + rating chart */
-.summary {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
-
-    @media (max-width: $phone) {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 18px;
-    }
-}
-
-.stats {
-    display: flex;
-    gap: 28px;
-
-    @media (max-width: $phone) {
-        justify-content: space-between;
-        gap: 12px;
-    }
-}
-
-.histogram {
-    @media (max-width: $phone) {
-        width: 100%;
-    }
-}
-
-.bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 44px;
-
-    @media (max-width: $phone) {
-        gap: 4px;
-        height: 52px;
-    }
-}
-
-.bar {
-    width: 14px;
-
-    // full width bars are way easier to tap than 14px slivers
-    @media (max-width: $phone) {
-        flex: 1 1 0;
-        width: auto;
-    }
-}
-
-/* toolbar: tabs, sort, layout */
+/* toolbar: type tabs + layout */
 .toolbar {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    flex-wrap: wrap;
-
-    // controls go on top so the tab underline still sits on the line below
-    @media (max-width: $phone) {
-        row-gap: 14px;
-    }
 }
 
 .tabs {
     display: flex;
-    gap: 20px;
-}
-
-.controls {
-    display: flex;
-    gap: 8px;
-    padding-bottom: 8px;
-
-    @media (max-width: $phone) {
-        order: -1;
-        width: 100%;
-        justify-content: space-between;
-        padding-bottom: 0;
-    }
-}
-
-.sortSegments {
-    @media (max-width: $narrow) {
-        display: none !important;
-    }
-}
-
-.sortSelect {
-    display: none;
-
-    @media (max-width: $narrow) {
-        display: inline-flex;
-    }
-}
-
-.select {
-    appearance: none;
-    font: inherit;
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0 28px 0 10px;
-    min-height: 32px;
-    border-radius: 8px;
-    cursor: pointer;
-    background-repeat: no-repeat;
-    background-position: right 9px center;
-    background-size: 10px;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M2 4l4 4 4-4'/></svg>");
-}
-
-.segment {
-    @media #{$touch} {
-        min-height: 32px;
-        padding-left: 11px !important;
-        padding-right: 11px !important;
-    }
+    gap: 18px;
 }
 
 .tab {
@@ -133,76 +24,57 @@ $touch: "(hover: none) and (pointer: coarse)";
     }
 }
 
-/* tag filters */
-.tags {
+/* search */
+.filters {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-
-    // one swipeable row on phones instead of a wall of chips
-    @media (max-width: $phone) {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        scrollbar-width: none;
-        padding: 2px 0;
-        mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
-    }
 }
 
-.chip {
-    flex-shrink: 0;
-
-    @media #{$touch} {
-        min-height: 32px;
-        display: inline-flex;
-        align-items: center;
-    }
-}
-
-/* list view */
-.rowHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-
-    @media (max-width: $phone) {
-        gap: 12px;
-    }
-}
-
-.rowMain {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
+.search {
+    flex: 1 1 auto;
     min-width: 0;
-    flex: 1 1 0;
+    transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+
+    // the input itself has no outline, so the field shows focus instead
+    &:focus-within {
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    input::-webkit-search-cancel-button {
+        cursor: pointer;
+    }
 }
 
+/* list rows and layout buttons: hover tint only on real pointers so it never sticks after a tap */
+.row {
+    background-color: transparent;
+}
+
+.row,
+.viewBtn {
+    transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.16s var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .row:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    :global(.dark) .row:hover {
+        background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .viewBtn[aria-pressed="false"]:hover {
+        color: var(--c-text-strong) !important;
+    }
+}
+
+/* list view: expanded note lines up with the title, not the poster */
 .panel {
-    margin-left: 48px;
+    margin-left: 40px;
 
     @media (max-width: $narrow) {
         margin-left: 0;
-    }
-}
-
-.expandBtn {
-    @media #{$touch} {
-        min-height: 32px;
-        padding-left: 12px !important;
-        padding-right: 12px !important;
-    }
-}
-
-.inlineChip {
-    @media #{$touch} {
-        min-height: 28px;
     }
 }
 

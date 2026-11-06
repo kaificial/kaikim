@@ -6,6 +6,7 @@ import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 
 import type { CaseFormat, MediaEntry } from "../../data/media";
 import { NEUTRAL_SPINE } from "./formats";
 import { spineFont } from "./fonts";
+import { FormatLogo } from "./FormatLogo";
 import { sfx } from "../../lib/sfx";
 
 /*
@@ -101,6 +102,7 @@ export const Disc = ({ entry, format, size, discNumber, label }: {
 
     const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
         e.stopPropagation();
+        if (e.pointerType === 'mouse') e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
         cancelAnimationFrame(coast.current ?? 0); // a new grab takes over from any coasting sound
         const a = angleAt(e, e.currentTarget);
@@ -191,6 +193,8 @@ export const Disc = ({ entry, format, size, discNumber, label }: {
                     borderRadius: '50%',
                     cursor: 'grab',
                     touchAction: 'none',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
                     transformStyle: 'preserve-3d',
                     rotateY: flip,
                     z: lift,
@@ -234,6 +238,7 @@ export const Disc = ({ entry, format, size, discNumber, label }: {
                             </text>
                         </svg>
                         <div style={{ ...ring(R.printEnd), boxShadow: '0 0 0 1px rgba(255,255,255,0.35)' }} />
+                        <FormatLogo kind={format === 'bluray' ? 'bluray' : 'dvd'} width="17%" color="#fff" style={{ position: 'absolute', left: '41.5%', top: '66%', filter: 'drop-shadow(0 0 0.15em rgba(0,0,0,0.6))' }} />
                     </div>
 
                     {/* ── data side: mirror, dye and the written spiral ── */}
@@ -246,16 +251,16 @@ export const Disc = ({ entry, format, size, discNumber, label }: {
                             WebkitMaskImage: `radial-gradient(circle closest-side, transparent ${R.clamp}%, #000 ${R.clamp + 0.3}%)`,
                             maskImage: `radial-gradient(circle closest-side, transparent ${R.clamp}%, #000 ${R.clamp + 0.3}%)`,
                         }}>
-                            {/* shiny layer: the rainbow stays put relative to the light while the disc spins */}
-                            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from calc(var(--sheen, 0deg) - var(--spin, 0deg)), #dfe3e8, #f1d3f2, #cdeee8, #f3eccb, #d2dcf6, #ebd0f0, #dfe3e8)' }} />
-                            {/* dye where data's been written, out to the rating's radius */}
-                            <div style={{ ...ring(rW), background: 'radial-gradient(circle closest-side, rgba(68,36,120,0.34), rgba(40,70,120,0.3))' }} />
-                            <div style={{ ...ring(rW), boxShadow: '0 0 0 1px rgba(30,16,60,0.55), 0 0 6px rgba(30,16,60,0.35)' }} />
+                            {/* shiny chrome bands that stay still while the disc spins */}
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from calc(var(--sheen, 0deg) - var(--spin, 0deg)), #8e949c, #f5f7f9 12%, #b4bac1 22%, #6f757d 33%, #d9dde2 45%, #f8f9fa 52%, #9aa0a8 62%, #646a72 74%, #c9ced4 86%, #8e949c)' }} />
+                            {/* the pressed data area reads a touch darker, out to the rating's radius */}
+                            <div style={{ ...ring(rW), background: 'radial-gradient(circle closest-side, rgba(20,24,30,0.08), rgba(20,24,30,0.16))' }} />
+                            <div style={{ ...ring(rW), boxShadow: '0 0 0 1px rgba(20,24,30,0.28)' }} />
                             {/* track lines, way exaggerated so you can see them */}
                             <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'repeating-radial-gradient(circle closest-side, rgba(0,0,0,0.035) 0 0.25%, transparent 0.25% 0.6%)' }} />
                             {/* mirror band and lead-in: blank, so a bit brighter */}
                             <div style={{ ...ring(R.leadIn), boxShadow: '0 0 0 1px rgba(0,0,0,0.12)' }} />
-                            <div style={{ ...ring(R.mirror), background: 'radial-gradient(circle closest-side, #f4f5f7 70%, #cfd3d9)' }} />
+                            <div style={{ ...ring(R.mirror), background: 'radial-gradient(circle closest-side, #e9ecef 60%, #aeb3ba)' }} />
                             {/* the one engraved label: the mould code, running round the mirror band */}
                             <svg viewBox="0 0 100 100" aria-hidden style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
                                 <defs>

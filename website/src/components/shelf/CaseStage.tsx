@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion } from "framer-motion";
+import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useTransform } from "framer-motion";
 import type { CaseFormat, MediaEntry } from "../../data/media";
 import { BLURAY_BLUE, FORMAT_LABEL, NEUTRAL_SPINE, SHADE, type CaseDims } from "./formats";
 import { Spine } from "./Spine";
@@ -12,6 +12,7 @@ import { shelfSounds } from "./sounds";
 import { sfx } from "../../lib/sfx";
 import { Disc } from "./Disc";
 import { BackCover } from "./BackCover";
+import { FormatLogo, logoFor } from "./FormatLogo";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const EASE_IN_OUT = [0.65, 0, 0.35, 1] as const;
@@ -102,18 +103,17 @@ const CoverArt = ({ entry, format, width }: { entry: MediaEntry; format: CaseFor
         <div style={{ position: 'absolute', inset: framed ? '0.3em 0.3em 0.3em 0.55em' : 0, overflow: 'hidden', borderRadius: framed ? '0.1em' : 0 }}>
         <Image src={entry.poster} alt="" fill sizes={`${Math.round(width)}px`} style={{ objectFit: 'cover' }} priority />
         {format === 'bluray' && (
-            <div className={spineFont.className} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2.1em', background: BLURAY_BLUE, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1em', letterSpacing: '0.08em' }}>
-                BLU-RAY DISC
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2.1em', background: BLURAY_BLUE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FormatLogo kind="bluray" height="1.35em" color="#fff" label />
             </div>
         )}
         {format === 'dvd' && (
-            <div className={spineFont.className} style={{ position: 'absolute', right: '0.8em', bottom: '0.8em', padding: '0.15em 0.45em', background: 'rgba(0,0,0,0.65)', color: '#fff', fontWeight: 800, fontSize: '1.1em', letterSpacing: '0.05em', borderRadius: '0.15em' }}>
-                DVD
-            </div>
+            <FormatLogo kind="dvd" height="2.2em" color="#fff" label style={{ position: 'absolute', right: '0.9em', bottom: '0.9em', filter: 'drop-shadow(0 0.1em 0.3em rgba(0,0,0,0.6))' }} />
         )}
         {format === 'boxset' && (
-            <div className={spineFont.className} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '0.6em 0', background: 'rgba(0,0,0,0.72)', color: '#fff', textAlign: 'center', fontWeight: 800, fontSize: '1.2em', letterSpacing: '0.12em' }}>
-                {entry.seasons ? `SEASONS 1–${entry.seasons}` : 'BOX SET'}
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '0.55em 1em', background: 'rgba(0,0,0,0.72)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1em' }}>
+                <span className={spineFont.className} style={{ fontWeight: 800, fontSize: '1.2em', letterSpacing: '0.12em' }}>{entry.seasons ? `SEASONS 1–${entry.seasons}` : 'BOX SET'}</span>
+                <FormatLogo kind="dvd" height="1.6em" color="#fff" label />
             </div>
         )}
         {format === 'vhs' && (
@@ -142,21 +142,25 @@ const LinerNotes = ({ entry, format, titleId }: { entry: MediaEntry; format: Cas
     const ink = '#1c1c1c';
     const muted = '#6b6b66';
     const accent = '#2563eb';
-    const meta = [FORMAT_LABEL[format], entry.year, entry.seasons && `${entry.seasons} seasons`].filter(Boolean).join(' · ');
+    const logo = logoFor(format);
+    const meta = [entry.kind === 'tv' ? 'Series' : 'Film', entry.year, entry.seasons && `${entry.seasons} seasons`].filter(Boolean).join(' · ');
     return (
         <div style={{
             position: 'absolute',
             inset: 0,
-            background: `${PAPER_GRAIN}, #f3f2ee`,
+            background: `${PAPER_GRAIN}, #f7f6f2`,
             color: ink,
-            padding: '1.8em 1.7em 1.5em',
+            padding: '1.9em 1.8em 1.6em',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.9em',
+            gap: '0.85em',
             boxSizing: 'border-box',
-            boxShadow: 'inset -0.6em 0 1em -0.6em rgba(0,0,0,0.25)',
+            boxShadow: 'inset -0.4em 0 0.8em -0.5em rgba(0,0,0,0.18)',
         }}>
-            <div style={{ fontSize: '0.9em', letterSpacing: '0.12em', textTransform: 'uppercase', color: muted }}>{meta}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1em', paddingBottom: '0.7em', borderBottom: `1px solid rgba(0,0,0,0.12)` }}>
+                <span style={{ fontSize: '0.85em', letterSpacing: '0.14em', textTransform: 'uppercase', color: muted }}>{meta}</span>
+                {logo ? <FormatLogo kind={logo} height="1.5em" color={ink} label /> : <span className={spineFont.className} style={{ fontWeight: 800, letterSpacing: '0.12em', fontSize: '0.95em' }}>{FORMAT_LABEL[format]}</span>}
+            </div>
             <h2 id={titleId} className={spineFont.className} style={{ fontSize: '3em', fontWeight: 800, lineHeight: 0.95, textTransform: 'uppercase', margin: 0, textWrap: 'balance' }}>
                 {entry.title}
             </h2>
@@ -176,7 +180,7 @@ const LinerNotes = ({ entry, format, titleId }: { entry: MediaEntry; format: Cas
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', fontSize: '1.08em', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
                 {entry.review ?? <span style={{ color: muted }}>No liner notes yet.</span>}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em 1.1em', paddingTop: '0.9em', borderTop: `1px dashed ${muted}`, fontSize: '0.92em', color: muted }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em 1.1em', paddingTop: '0.9em', borderTop: '1px solid rgba(0,0,0,0.12)', fontSize: '0.92em', color: muted }}>
                 {entry.watched && !entry.letterboxdUrl && <span>Watched {formatWatched(entry.watched)}</span>}
                 {!!entry.rewatches && <span>{entry.rewatches + 1} watches</span>}
                 {entry.imdbUrl && <a href={entry.imdbUrl} target="_blank" rel="noopener noreferrer" style={{ color: muted, fontWeight: 600 }}>IMDb ↗</a>}
@@ -231,39 +235,59 @@ const LinerNotes = ({ entry, format, titleId }: { entry: MediaEntry; format: Cas
 
 const Tray = ({ entry, format, width, height }: { entry: MediaEntry; format: CaseFormat; width: number; height: number }) => {
     const discs = format === 'boxset' ? Math.min(Math.max(entry.seasons ?? 1, 1), 4) : 1;
+    const logo = logoFor(format);
+    const discSize = Math.min(width * 0.86, height * 0.62);
+    const plastic = PLASTIC[format];
     return (
         <div style={{
             position: 'absolute',
             inset: 0,
-            background: `radial-gradient(circle at 50% 45%, rgba(255,255,255,0.07), transparent 60%), ${PLASTIC[format]}`,
-            boxShadow: 'inset 0 0 0 0.5em rgba(255,255,255,0.03), inset 0.8em 0 1.2em -0.6em rgba(0,0,0,0.6)',
+            // matte moulded plastic: one soft falloff from the top, nothing else
+            background: `linear-gradient(rgba(255,255,255,0.045), rgba(0,0,0,0.18)), ${plastic}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transformStyle: 'preserve-3d',
         }}>
-            <div aria-hidden style={{ position: 'absolute', inset: '0.45em', borderRadius: '0.25em', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.35)' }} />
-            {format !== 'vhs' && [0.18, 0.82].map((y) => (
-                <div key={y} aria-hidden style={{ position: 'absolute', left: '0.45em', top: `calc(${y * 100}% - 0.9em)`, width: '0.55em', height: '1.8em', borderRadius: '0 0.2em 0.2em 0', background: PLASTIC[format], filter: SHADE.top, boxShadow: '1px 0 2px rgba(0,0,0,0.5)' }} />
+            {/* the raised rim around the edge of the tray */}
+            <div aria-hidden style={{ position: 'absolute', inset: '0.4em', borderRadius: '0.35em', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 0.15em 0.3em rgba(0,0,0,0.35)' }} />
+            {/* booklet clips on the hinge side */}
+            {format !== 'vhs' && [0.16, 0.84].map((y) => (
+                <div key={y} aria-hidden style={{ position: 'absolute', left: '0.4em', top: `calc(${y * 100}% - 0.8em)`, width: '0.45em', height: '1.6em', borderRadius: '0 0.25em 0.25em 0', background: `linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)), ${plastic}`, boxShadow: '0.08em 0 0.15em rgba(0,0,0,0.5)' }} />
             ))}
-            <div aria-hidden className={spineFont.className} style={{ position: 'absolute', bottom: '0.9em', left: 0, right: 0, textAlign: 'center', fontSize: '0.8em', fontWeight: 800, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.09)', textShadow: '0 1px 0 rgba(0,0,0,0.6)' }}>
-                {format === 'vhs' ? 'VIDEO CASSETTE' : format === 'bluray' ? 'BLU-RAY DISC' : 'DVD VIDEO'}
+            {format !== 'vhs' && discs === 1 && (
+                <>
+                    {/* the round well the disc sits in, and the two finger notches either side of it */}
+                    <div aria-hidden style={{ position: 'absolute', left: '50%', top: '50%', width: discSize * 1.04, height: discSize * 1.04, marginLeft: -discSize * 0.52, marginTop: -discSize * 0.52, borderRadius: '50%', boxShadow: 'inset 0 0.2em 0.5em rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04)' }} />
+                    {[-1, 1].map((side) => (
+                        <div key={side} aria-hidden style={{ position: 'absolute', left: `calc(50% + ${side * discSize * 0.5}px - 1.3em)`, top: 'calc(50% - 1.3em)', width: '2.6em', height: '2.6em', borderRadius: '50%', background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0.2em 0.4em rgba(0,0,0,0.6)' }} />
+                    ))}
+                </>
+            )}
+            {/* moulded format mark, pressed into the plastic */}
+            <div aria-hidden style={{ position: 'absolute', bottom: '0.9em', left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+                {logo ? (
+                    <FormatLogo kind={logo} height="1.4em" color="rgba(255,255,255,0.08)" style={{ filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.7))' }} />
+                ) : (
+                    <span className={spineFont.className} style={{ fontSize: '0.8em', fontWeight: 800, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.09)', textShadow: '0 1px 0 rgba(0,0,0,0.6)' }}>VIDEO CASSETTE</span>
+                )}
             </div>
             {format === 'vhs' ? (
                 <Cassette width={width * 0.84} title={entry.title} />
             ) : discs === 1 ? (
-                <Disc entry={entry} format={format} size={Math.min(width * 0.86, height * 0.62)} discNumber={1} />
+                <Disc entry={entry} format={format} size={discSize} discNumber={1} />
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: width * 0.04, transformStyle: 'preserve-3d' }}>
                     {Array.from({ length: discs }, (_, i) => (
-                        <Disc
-                            key={i}
-                            entry={entry}
-                            format={format}
-                            size={width * 0.42}
-                            discNumber={i + 1}
-                            label={i === discs - 1 && (entry.seasons ?? 0) > discs ? `S${i + 1}–${entry.seasons}` : `S${i + 1}`}
-                        />
+                        <div key={i} style={{ position: 'relative', borderRadius: '50%', boxShadow: 'inset 0 0.15em 0.4em rgba(0,0,0,0.55)', transformStyle: 'preserve-3d' }}>
+                            <Disc
+                                entry={entry}
+                                format={format}
+                                size={width * 0.42}
+                                discNumber={i + 1}
+                                label={i === discs - 1 && (entry.seasons ?? 0) > discs ? `S${i + 1}–${entry.seasons}` : `S${i + 1}`}
+                            />
+                        </div>
                     ))}
                 </div>
             )}
@@ -313,14 +337,20 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
     // the case's own spin while you look at it, separate from the flight
     const orbitY = useMotionValue(0);
     const orbitX = useMotionValue(0);
-    const [facing, setFacing] = useState<string>(FACES[0]);
+    // the front cover's hinge angle: 0 shut, COVER_OPEN_DEG fully open
+    const coverRot = useMotionValue(0);
+
+    // light comes from the top left, same as the shelf
+    // the cover throws a shadow on the tray as it lifts off, gone once it's laid flat
+    const trayShade = useTransform(coverRot, [COVER_OPEN_DEG, -110, -25, 0], [0, 0.12, 0.6, 0.6]);
+    // the inside of the cover faces away from the light until it's swung right round
+    const notesShade = useTransform(coverRot, [COVER_OPEN_DEG, -120, -40, 0], [0, 0.06, 0.4, 0.4]);
     const facingRef = useRef<string>(FACES[0]);
     useMotionValueEvent(orbitY, 'change', (v) => {
         const next = facingOf(v);
         if (next === facingRef.current) return;
         facingRef.current = next;
         shelfSounds.tick();
-        setFacing(next);
     });
 
     const W = dims.width * scale;
@@ -333,6 +363,10 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
     // css scale() is 2d and never shrinks depth, so this is the full half-width on stage
     const spineZ = -W / 2;
     const titleId = `case-title-${entry.id}`;
+    const footprint = useTransform(orbitY, (v) => {
+        const r = (v * Math.PI) / 180;
+        return Math.abs(Math.cos(r)) * W + Math.abs(Math.sin(r)) * D;
+    });
     const caseColor = PLASTIC[format];
     const edgeColor = format === 'boxset' || format === 'vhs' ? entry.spineColor ?? NEUTRAL_SPINE : caseColor;
 
@@ -434,7 +468,7 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
         shelfSounds.snap();
         const swing = reduceMotion ? { duration: 0 } : { duration: 0.6, ease: EASE };
         animate(el, { x: openX(page) }, swing);
-        await animate(cover, { rotateY: COVER_OPEN_DEG }, swing);
+        await animate(coverRot, COVER_OPEN_DEG, swing);
         if (currentPhase() === 'opening') setPhase('open');
     };
 
@@ -453,7 +487,7 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
         setPhase('shutting');
         const swing = reduceMotion ? { duration: 0 } : { duration: 0.45, ease: EASE_IN_OUT };
         animate(el, { x: 0 }, swing);
-        await animate(cover, { rotateY: 0 }, swing);
+        await animate(coverRot, 0, swing);
         if (currentPhase() !== 'shutting') return;
         shelfSounds.clack();
         setPhase('inspect');
@@ -479,7 +513,7 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
         sfx.whoosh({ duration: 0.6, rising: false, x: to.x + window.innerWidth / 2 });
         animate(orbitY, Math.round(orbitY.get() / 360) * 360, { duration: 0.4, ease: EASE_IN_OUT });
         animate(orbitX, 0, { duration: 0.4, ease: EASE_IN_OUT });
-        animate(cover, { rotateY: 0 }, { duration: 0.34, ease: EASE_IN_OUT });
+        animate(coverRot, 0, { duration: 0.34, ease: EASE_IN_OUT });
         animate(backdrop, { opacity: 0 }, { duration: 0.5, delay: 0.18, ease: 'easeOut' });
         await animate(el, { x: to.x, y: to.y, z: spineZ, scale: 1 / scale, rotateY: 90 }, {
             duration: 0.74,
@@ -492,12 +526,14 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
         onClosed();
         // stopTour only touches refs, everything else stays the same for the life of the stage
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getOrigin, onClosed, reduceMotion, scale, spineZ]);
+    }, [coverRot, getOrigin, onClosed, reduceMotion, scale, spineZ]);
 
     // ── turning the case by hand: drag with inertia that settles on a side ──
     const drag = useRef<{ x: number; y: number; ry: number; rx: number; lastX: number; lastT: number; v: number; moved: number } | null>(null);
     const onCasePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         if (phaseRef.current !== 'inspect' || e.button !== 0) return;
+        // don't select text while dragging
+        if (e.pointerType === 'mouse') e.preventDefault();
         stopTour();
         e.currentTarget.setPointerCapture(e.pointerId);
         drag.current = { x: e.clientX, y: e.clientY, ry: orbitY.get(), rx: orbitX.get(), lastX: e.clientX, lastT: performance.now(), v: 0, moved: 0 };
@@ -599,11 +635,6 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
         background: active ? 'rgba(255,255,255,0.2)' : 'transparent',
         fontWeight: active ? 600 : 400,
     });
-    const hint = isOpen
-        ? mode === 'single' && page === 'notes'
-            ? 'Liner notes'
-            : `${touch ? 'Tap' : 'Click'} the disc to flip it · drag to spin`
-        : `${facing} · drag${touch ? '' : ' or ← →'} to turn`;
 
     return createPortal(
         <div
@@ -624,6 +655,26 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
             <button type="button" onClick={() => void close()} style={{ ...pill, position: 'absolute', top: 'max(20px, env(safe-area-inset-top))', right: 'max(20px, env(safe-area-inset-right))', zIndex: 1 }}>
                 Put back {!touch && <span style={{ opacity: 0.55, marginLeft: 6 }}>Esc</span>}
             </button>
+
+            {/* soft shadow on the "floor" under the floating case, only while it hangs there to be looked at */}
+            <motion.div
+                aria-hidden
+                initial={false}
+                animate={{ opacity: phase === 'inspect' ? 1 : 0 }}
+                transition={{ duration: phase === 'inspect' ? 0.5 : 0.15, ease: EASE }}
+                style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: `calc(50% + ${H / 2 + Math.max(18, H * 0.08)}px)`,
+                    width: footprint,
+                    height: Math.max(14, H * 0.06),
+                    x: '-50%',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(closest-side, rgba(0,0,0,0.55), rgba(0,0,0,0.25) 55%, transparent)',
+                    filter: 'blur(6px)',
+                    pointerEvents: 'none',
+                }}
+            />
 
             <div
                 ref={caseRef}
@@ -646,6 +697,8 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
                     fontSize: `${10 * scale}px`,
                     cursor: phase === 'inspect' ? 'grab' : 'default',
                     touchAction: phase === 'inspect' ? 'none' : 'auto',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
                 }}
             >
                 <motion.div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', rotateX: orbitX, rotateY: orbitY }}>
@@ -664,17 +717,19 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
                     {/* inside tray, just under the cover */}
                     <div style={{ ...face, inset: 0, transformStyle: 'preserve-3d', transform: `translateZ(${D / 2 - 1}px)` }}>
                         <Tray entry={entry} format={format} width={W} height={H} />
+                        <motion.div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: trayShade, background: 'linear-gradient(90deg, rgba(0,0,0,0.7), rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.05) 85%, transparent)' }} />
                     </div>
                     {/* front cover, hinged on the spine edge. the hinge wrappers are invisible boxes over the whole tray, so only the cover's own faces should get the pointer */}
                     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformStyle: 'preserve-3d', transform: `translateZ(${D / 2 + 0.5}px)` }}>
-                        <div ref={coverRef} style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', transformOrigin: 'left center' }}>
+                        <motion.div ref={coverRef} style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', transformOrigin: 'left center', rotateY: coverRot }}>
                             <div style={{ ...face, inset: 0, pointerEvents: 'auto' }}>
                                 <CoverArt entry={entry} format={format} width={W} />
                             </div>
                             <div style={{ ...face, inset: 0, pointerEvents: 'auto', transform: 'rotateY(180deg)' }}>
                                 <LinerNotes entry={entry} format={format} titleId={titleId} />
+                                <motion.div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: notesShade, background: 'linear-gradient(270deg, rgba(0,0,0,0.55), rgba(0,0,0,0.15) 70%)' }} />
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </motion.div>
             </div>
@@ -693,18 +748,6 @@ export const CaseStage = ({ entry, format, dims, getOrigin, onClosed }: {
                 zIndex: 1,
                 pointerEvents: 'none',
             }}>
-                <span aria-live="polite" style={{
-                    fontSize: '0.72rem',
-                    letterSpacing: '0.08em',
-                    color: 'rgba(245,245,245,0.6)',
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                    // on phones the hint gets its own line above the buttons
-                    flexBasis: mode === 'single' || touch ? '100%' : 'auto',
-                    textAlign: 'center',
-                }}>
-                    {hint}
-                </span>
                 {isOpen && mode === 'single' && (
                     <div role="group" aria-label="Show" style={{ display: 'inline-flex', padding: 3, gap: 2, borderRadius: 9999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', pointerEvents: 'auto' }}>
                         <button type="button" aria-pressed={page === 'notes'} onClick={() => showPage('notes')} style={segment(page === 'notes')}>Notes</button>
