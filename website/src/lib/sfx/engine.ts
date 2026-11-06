@@ -62,7 +62,8 @@ const buildGraph = (c: BaseAudioContext, destination: AudioNode): { input: Audio
     comp.attack.value = 0.002;
     comp.release.value = 0.12;
     const send = c.createGain();
-    send.gain.value = 0.04;
+    // just a touch of room, a dry mix sounds tighter
+    send.gain.value = 0.02;
     const room = c.createConvolver();
     room.buffer = roomImpulse(c);
 

@@ -69,8 +69,8 @@ export const setSfxMuted = (next: boolean) => {
 };
 
 /** speaker icon, crossed out when muted */
-export const SpeakerIcon = ({ muted, size = 20 }: { muted: boolean; size?: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+export const SpeakerIcon = ({ muted, size = 20, filled = false }: { muted: boolean; size?: number; filled?: boolean }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M11 5 6 9H2v6h4l5 4V5z" />
         {muted ? (
             <>
@@ -79,8 +79,8 @@ export const SpeakerIcon = ({ muted, size = 20 }: { muted: boolean; size?: numbe
             </>
         ) : (
             <>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" />
             </>
         )}
     </svg>

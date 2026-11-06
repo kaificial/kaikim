@@ -1,12 +1,13 @@
 "use client";
 
-import { audio, canHover, outlet, prefersReducedMotion } from './engine';
-import { note, PITCH } from './palette';
-import { bell, continuousNoise, grains, noise, thump, tone, type Continuous } from './voices';
+import { audio, outlet, prefersReducedMotion } from './engine';
+import { PITCH } from './palette';
+import { bell, continuousNoise, noise, thump, tone, type Continuous } from './voices';
 
 /**
  * every sound on the site lives here (full list: docs/sound-design-plan.md). the more often
- * something happens, the quieter it is: hover ≈ −38 dB, press ≈ −24 dB, rare stuff up to ≈ −14 dB.
+ * something happens, the quieter it is. hover and page changes are silent, presses are a soft click,
+ * only rare moments (like, success) get a note.
  *
  * `x` pans the sound to where it happened (defaults to the last pointer spot),
  * `degree` picks a note from the site's pentatonic scale
@@ -25,106 +26,85 @@ const limiter = (ms: number) => {
 };
 
 const pressLimit = limiter(30);
-const hoverLimit = limiter(60);
 const tickLimit = limiter(60);
 const listLimit = limiter(50);
 const keyLimit = limiter(30);
 
+// keep it quiet: soft sines and short clicks, no melodies on stuff you do all the time.
+// `degree` still works but presses don't play a scale anymore
+
+/** soft click: a tiny noise tick with a bit of sine under it. most ui sounds use this */
+const click = (c: BaseAudioContext, out: AudioNode, { at = 0, gain = 1, freq = 2400 }: { at?: number; gain?: number; freq?: number } = {}) => {
+    noise(c, out, { at, duration: 0.012, freq: 5200, q: 0.9, gain: 0.07 * gain });
+    tone(c, out, { at, duration: 0.03, freq, to: freq * 0.85, type: 'sine', gain: 0.028 * gain });
+};
+
 /* ── plastic: buttons, chips, cases ── */
 
-/** pressing any control. with a degree, a soft note plays under the click */
-export const press = ({ x, degree }: CueOpts = {}) => {
+/** pressing any control */
+export const press = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g || !pressLimit()) return;
-    const out = outlet(g, x);
-    noise(g.ctx, out, { duration: 0.03, freq: 3200, q: 1.8, gain: 0.21 });
-    if (degree !== undefined) tone(g.ctx, out, { duration: 0.07, freq: note(degree, 5), type: 'triangle', gain: 0.135 });
-    else thump(g.ctx, out, { duration: 0.035, freq: 220, gain: 0.15 });
+    click(g.ctx, outlet(g, x));
 };
 
-/** hovering a control (desktop only, barely there) */
-export const hover = ({ x, degree }: CueOpts = {}) => {
-    if (!canHover()) return;
-    const g = audio(false);
-    if (!g || !hoverLimit()) return;
-    const out = outlet(g, x);
-    noise(g.ctx, out, { duration: 0.016, freq: 4200, q: 2, gain: 0.026 });
-    if (degree !== undefined) tone(g.ctx, out, { duration: 0.04, freq: note(degree, 6), type: 'sine', gain: 0.018 });
-};
+/** hovering a control: silent on purpose, sound on every hover is noise */
+export const hover = (opts: CueOpts = {}) => { void opts; };
 
-/** plastic brushing past its neighbour: shelf spines, case sides, list steps */
+/** brushing past a neighbour: shelf spines, case sides, list steps */
 export const tick = ({ x }: CueOpts = {}) => {
     const g = audio(false);
     if (!g || !tickLimit()) return;
-    noise(g.ctx, outlet(g, x), { duration: 0.014, freq: 4200, q: 2, gain: 0.15 });
+    noise(g.ctx, outlet(g, x), { duration: 0.008, freq: 5600, q: 1.2, gain: 0.045 });
 };
 
 /** case sliding out of, or back into, the shelf */
 export const clack = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g, x);
-    noise(g.ctx, out, { duration: 0.04, freq: 1800, q: 1.5, gain: 0.16 });
-    thump(g.ctx, out, { duration: 0.07, freq: 150, gain: 0.22 });
+    click(g.ctx, outlet(g, x), { freq: 1400, gain: 1.1 });
 };
 
 /** the case hinge clicking open */
 export const snap = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g, x);
-    noise(g.ctx, out, { duration: 0.018, freq: 2600, q: 3, gain: 0.14 });
-    noise(g.ctx, out, { at: 0.05, duration: 0.022, freq: 2100, q: 3, gain: 0.1 });
+    click(g.ctx, outlet(g, x), { freq: 2000 });
 };
 
-/** on/off switch: goes up when on, down when off */
+/** on/off switch: a click with a short sine nudge up (on) or down (off) */
 export const toggle = (on: boolean, { x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
     const out = outlet(g, x);
-    noise(g.ctx, out, { duration: 0.02, freq: 3600, q: 2, gain: 0.06 });
-    tone(g.ctx, out, { at: 0.01, duration: 0.12, freq: on ? PITCH.D4 : PITCH.A4, to: on ? PITCH.A4 : PITCH.D4, type: 'triangle', gain: 0.06 });
+    click(g.ctx, out, { gain: 0.8 });
+    tone(g.ctx, out, { at: 0.01, duration: 0.08, freq: on ? PITCH.A5 : PITCH.D6, to: on ? PITCH.D6 : PITCH.A5, type: 'sine', gain: 0.022, attack: 0.006 });
 };
 
-/** theme switch: a toggle, plus a bright tick going light or a low thump going dark */
-export const theme = (dark: boolean, opts: CueOpts = {}) => {
-    const g = audio(true);
-    if (!g) return;
-    toggle(!dark, opts);
-    const out = outlet(g, opts.x);
-    if (dark) thump(g.ctx, out, { at: 0.06, duration: 0.16, freq: 70, gain: 0.14 });
-    else noise(g.ctx, out, { at: 0.06, duration: 0.03, freq: 6000, q: 3, gain: 0.05 });
-};
+/** theme switch: just the toggle */
+export const theme = (dark: boolean, opts: CueOpts = {}) => toggle(!dark, opts);
 
-/**
- * the tile wave during a theme switch: quiet pixel blips walking down the scale into dark, or up into
- * light
- */
+/** the tile wave during a theme switch: one quiet airy swell that lasts as long as the wave */
 export const themeWave = (dark: boolean, durationMs: number, { x }: CueOpts = {}) => {
+    if (prefersReducedMotion()) return;
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g, x);
-    const steps = 7;
-    for (let i = 0; i < steps; i++) {
-        const degree = dark ? 9 - i : 3 + i;
-        // bunched up early like the wave, most tiles flip near the start
-        const at = 0.05 + Math.pow(i / steps, 1.4) * (durationMs / 1000) * 0.8;
-        tone(g.ctx, out, { at, duration: 0.035, freq: note(degree, 4), type: 'triangle', gain: 0.03 * (1 - i * 0.08), crush: 6 });
-    }
+    const d = Math.min(0.9, (durationMs / 1000) * 0.7);
+    noise(g.ctx, outlet(g, x), { at: 0.03, duration: d, freq: dark ? 3200 : 1200, to: dark ? 1200 : 3200, type: 'bandpass', q: 0.6, gain: 0.018, attack: d * 0.4 });
 };
 
-/** something small popping in: a sine with a pitch drop */
+/** something small appearing */
 export const pop = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    tone(g.ctx, outlet(g, x), { duration: 0.06, freq: 620, to: 300, type: 'sine', gain: 0.07 });
+    tone(g.ctx, outlet(g, x), { duration: 0.045, freq: 1100, to: 760, type: 'sine', gain: 0.035 });
 };
 
 /** sliding between two halves of something (the mobile notes/disc switch) */
 export const slide = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    noise(g.ctx, outlet(g, x), { duration: 0.12, freq: 900, to: 2400, q: 1.2, gain: 0.05, attack: 0.03 });
+    noise(g.ctx, outlet(g, x), { duration: 0.09, freq: 1600, to: 3600, q: 0.8, gain: 0.022, attack: 0.03 });
 };
 
 /* ── paper ── */
@@ -133,19 +113,20 @@ export const slide = ({ x }: CueOpts = {}) => {
 export const paper = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    grains(g.ctx, outlet(g, x), { count: 3, gap: 0.008, freq: 4500, gain: 0.07 });
+    noise(g.ctx, outlet(g, x), { duration: 0.02, freq: 4800, q: 0.7, gain: 0.04 });
 };
 
-/** a panel unfolding (grains going up) or folding away (going down, quicker) */
+/** a panel opening: a short soft rise */
 export const unfold = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    grains(g.ctx, outlet(g, x), { count: 3, gap: 0.03, freq: 2800, step: 1.25, gain: 0.06, duration: 0.02 });
+    noise(g.ctx, outlet(g, x), { duration: 0.06, freq: 2400, to: 5200, q: 0.8, gain: 0.03, attack: 0.015 });
 };
+/** a panel closing: the same, falling and quicker */
 export const fold = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    grains(g.ctx, outlet(g, x), { count: 2, gap: 0.02, freq: 4000, step: 0.8, gain: 0.05, duration: 0.016 });
+    noise(g.ctx, outlet(g, x), { duration: 0.04, freq: 5200, to: 2400, q: 0.8, gain: 0.025, attack: 0.008 });
 };
 
 /** rubber stamp on paper (the letterboxd stamp in the liner notes) */
@@ -153,46 +134,37 @@ export const stamp = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
     const out = outlet(g, x);
-    thump(g.ctx, out, { duration: 0.09, freq: 90, gain: 0.2 });
-    noise(g.ctx, out, { duration: 0.05, freq: 1400, q: 0.7, gain: 0.08 });
+    thump(g.ctx, out, { duration: 0.06, freq: 110, gain: 0.08 });
+    noise(g.ctx, out, { duration: 0.025, freq: 2400, q: 0.7, gain: 0.03 });
 };
 
 /* ── air ── */
 
-/** going to another page: an air sweep that ends on a paper flick */
-export const nav = () => {
-    if (prefersReducedMotion()) return;
-    const g = audio(true);
-    if (!g) return;
-    const out = outlet(g);
-    noise(g.ctx, out, { duration: 0.16, freq: 2000, to: 6000, type: 'lowpass', q: 0.7, gain: 0.05, attack: 0.04 });
-    grains(g.ctx, out, { at: 0.15, count: 2, gap: 0.008, freq: 5000, gain: 0.04 });
-};
+/** going to another page: silent, the page change is feedback enough */
+export const nav = () => {};
 
 /** something flying: the case leaving or coming back to the shelf */
 export const whoosh = ({ x, duration = 0.3, rising = true }: CueOpts & { duration?: number; rising?: boolean } = {}) => {
     if (prefersReducedMotion()) return;
     const g = audio(true);
     if (!g) return;
-    noise(g.ctx, outlet(g, x), { duration, freq: rising ? 500 : 3000, to: rising ? 3000 : 500, type: 'bandpass', q: 0.9, gain: 0.05, attack: duration * 0.35 });
+    noise(g.ctx, outlet(g, x), { duration, freq: rising ? 900 : 3200, to: rising ? 3200 : 900, type: 'bandpass', q: 0.6, gain: 0.022, attack: duration * 0.4 });
 };
 
 /* ── glass ── */
 
-/** a disc flipping over, the data side rings a bit brighter */
+/** a disc flipping over */
 export const flip = (toDataSide: boolean, { x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g, x);
-    noise(g.ctx, out, { duration: 0.02, freq: 5000, q: 2, gain: 0.04 });
-    bell(g.ctx, out, { at: 0.01, duration: 0.45, freq: toDataSide ? PITCH.A5 : PITCH.Fs5, ratio: 3.5, index: toDataSide ? 2.4 : 1.6, gain: 0.05 });
+    bell(g.ctx, outlet(g, x), { duration: 0.3, freq: toDataSide ? PITCH.A5 : PITCH.Fs5, ratio: 2, index: 0.5, gain: 0.03 });
 };
 
-/** it worked (like email copied) */
+/** it worked (like email copied): one clean sine chime */
 export const success = ({ x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
-    bell(g.ctx, outlet(g, x), { duration: 0.4, freq: PITCH.A5, ratio: 2, index: 1.2, gain: 0.07 });
+    bell(g.ctx, outlet(g, x), { duration: 0.35, freq: PITCH.A5, ratio: 2, index: 0.4, gain: 0.04 });
 };
 
 /** a disc spinning under your finger: brightness follows the speed */
@@ -200,62 +172,55 @@ export const spin = (): Continuous | null => {
     if (prefersReducedMotion()) return null;
     const g = audio(true);
     if (!g) return null;
-    return continuousNoise(g.ctx, outlet(g), { minFreq: 800, maxFreq: 4000, maxGain: 0.05 });
+    return continuousNoise(g.ctx, outlet(g), { minFreq: 1200, maxFreq: 4200, maxGain: 0.025, q: 0.8 });
 };
 
-/* ── pixels and terminals ── */
+// chimes
 
-/** the pixel heart: three notes going up with a little shimmer. already liked: one soft blip */
+/** liking the site: two soft sine notes going up. already liked: just a click */
 export const like = (first: boolean, { x }: CueOpts = {}) => {
     const g = audio(true);
     if (!g) return;
     const out = outlet(g, x);
-    if (!first) {
-        tone(g.ctx, out, { duration: 0.06, freq: PITCH.D4, type: 'square', gain: 0.05, crush: 4 });
-        return;
-    }
-    [PITCH.D5, PITCH.Fs5, PITCH.A5].forEach((f, i) =>
-        tone(g.ctx, out, { at: i * 0.045, duration: 0.05, freq: f, type: 'square', gain: 0.035, crush: 4 }));
-    bell(g.ctx, out, { at: 0.13, duration: 0.18, freq: PITCH.D6, ratio: 3.5, index: 1, gain: 0.025 });
+    if (!first) { click(g.ctx, out, { gain: 0.8 }); return; }
+    tone(g.ctx, out, { duration: 0.09, freq: PITCH.D5, type: 'sine', gain: 0.04, attack: 0.004 });
+    tone(g.ctx, out, { at: 0.06, duration: 0.16, freq: PITCH.A5, type: 'sine', gain: 0.035, attack: 0.004 });
 };
 
-/** command palette opening (two notes up) or closing (down, shorter) */
+/** command palette opening: a soft high blip. closing: a quieter, lower one */
 export const open = () => {
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g);
-    tone(g.ctx, out, { duration: 0.03, freq: PITCH.D5, type: 'triangle', gain: 0.04, crush: 6 });
-    tone(g.ctx, out, { at: 0.032, duration: 0.04, freq: PITCH.A5, type: 'triangle', gain: 0.04, crush: 6 });
+    tone(g.ctx, outlet(g), { duration: 0.06, freq: PITCH.A5, to: PITCH.D6, type: 'sine', gain: 0.03, attack: 0.004 });
 };
 export const close = () => {
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g);
-    tone(g.ctx, out, { duration: 0.02, freq: PITCH.A5, type: 'triangle', gain: 0.03, crush: 6 });
-    tone(g.ctx, out, { at: 0.02, duration: 0.025, freq: PITCH.D5, type: 'triangle', gain: 0.03, crush: 6 });
+    tone(g.ctx, outlet(g), { duration: 0.05, freq: PITCH.D6, to: PITCH.A5, type: 'sine', gain: 0.022, attack: 0.004 });
 };
 
-/** moving through a list (command palette results) */
-export const step = ({ degree = 0 }: CueOpts = {}) => {
+/** moving through a list (command palette results): the faintest tick */
+export const step = (opts: CueOpts = {}) => {
+    void opts;
     const g = audio(false);
     if (!g || !listLimit()) return;
-    tone(g.ctx, outlet(g), { duration: 0.02, freq: note(degree, 6), type: 'triangle', gain: 0.06 });
+    noise(g.ctx, outlet(g), { duration: 0.008, freq: 5000, q: 1.2, gain: 0.035 });
 };
 
-/** a command ran: two notes going up */
+/** a command ran: one clean note */
 export const confirm = () => {
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g);
-    tone(g.ctx, out, { duration: 0.09, freq: PITCH.D5, type: 'triangle', gain: 0.05 });
-    tone(g.ctx, out, { at: 0.08, duration: 0.12, freq: PITCH.Fs5, type: 'triangle', gain: 0.05 });
+    tone(g.ctx, outlet(g), { duration: 0.12, freq: PITCH.D6, type: 'sine', gain: 0.035, attack: 0.004 });
 };
 
-/** something didn't work: a buzzy note going down */
+/** something didn't work: two low soft sines, no buzz */
 export const error = () => {
     const g = audio(true);
     if (!g) return;
-    tone(g.ctx, outlet(g), { duration: 0.18, freq: PITCH.Fs4, to: PITCH.D4, type: 'square', gain: 0.06, crush: 3 });
+    const out = outlet(g);
+    tone(g.ctx, out, { duration: 0.07, freq: PITCH.Fs4, type: 'sine', gain: 0.05, attack: 0.004 });
+    tone(g.ctx, out, { at: 0.09, duration: 0.1, freq: PITCH.D4, type: 'sine', gain: 0.05, attack: 0.004 });
 };
 
 /** a terminal keystroke: tiny, slightly different per key */
@@ -263,26 +228,22 @@ export const key = (char = '') => {
     const g = audio(true);
     if (!g || !keyLimit()) return;
     const code = char.charCodeAt(0) || 0;
-    noise(g.ctx, outlet(g), { duration: 0.012, freq: 2500 + (code % 9) * 250, q: 2.2, gain: 0.09 });
+    noise(g.ctx, outlet(g), { duration: 0.008, freq: 4200 + (code % 7) * 200, q: 1.4, gain: 0.04 });
 };
 
-/** the 404 dots blown apart: a whoosh plus pixel blips falling like the dots */
+/** the 404 dots blown apart: one soft falling air sweep */
 export const scatter = ({ x }: CueOpts = {}) => {
+    if (prefersReducedMotion()) return;
     const g = audio(true);
     if (!g) return;
-    const out = outlet(g, x);
-    if (!prefersReducedMotion()) noise(g.ctx, out, { duration: 0.35, freq: 3000, to: 400, type: 'lowpass', q: 0.6, gain: 0.07, attack: 0.005 });
-    for (let i = 0; i < 6; i++) {
-        const f = note(4 - i + Math.round(Math.random() * 2), 5);
-        tone(g.ctx, out, { at: 0.02 + i * 0.035 + Math.random() * 0.015, duration: 0.04, freq: f, to: f * 0.7, type: 'square', gain: 0.018, crush: 4 });
-    }
+    noise(g.ctx, outlet(g, x), { duration: 0.3, freq: 3600, to: 700, type: 'lowpass', q: 0.5, gain: 0.035, attack: 0.01 });
 };
 
 /** the 404 dots are all back together */
 export const settle = () => {
     const g = audio(false);
     if (!g) return;
-    bell(g.ctx, outlet(g), { duration: 0.5, freq: PITCH.A5, ratio: 2, index: 0.6, gain: 0.025 });
+    bell(g.ctx, outlet(g), { duration: 0.4, freq: PITCH.A5, ratio: 2, index: 0.3, gain: 0.02 });
 };
 
 /** every sound, grouped by material, for /sfx-lab */
