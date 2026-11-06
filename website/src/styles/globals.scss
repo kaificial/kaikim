@@ -56,6 +56,10 @@
     --c-tag-bg: #f3f4f6;
     --c-tag-fg: #374151;
     --c-link: #2563eb;
+
+    // keep in sync with EASE_OUT / EASE_IN_OUT in src/styles/motion.ts
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 // while the theme wave runs (lib/themeTransition.ts) colour transitions are off so the
@@ -108,6 +112,60 @@ html.theme-switching *::after {
 html {
     scroll-behavior: smooth;
     font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    // no grey flash on tap in mobile safari / chrome
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+// slim, quiet scrollbars for mouse and trackpad users. touch screens keep their own overlay bars
+@media (hover: hover) and (pointer: fine) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+    }
+
+    .dark,
+    .dark * {
+        scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    }
+
+    // safari and older chromium, which ignore the two properties above
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.18);
+        border-radius: 9999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(0, 0, 0, 0.32);
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+    }
 }
 
 body {
@@ -131,13 +189,13 @@ main {
     padding-bottom: 60px; // space for floating dock on iphone
 
     @media (min-width: 768px) {
-        padding-bottom: 1.5rem;
+        padding-bottom: 0;
     }
 }
 
 // smooth transitions 
 body {
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
 }
 
 // reset links
@@ -155,6 +213,61 @@ button,
 input,
 textarea {
     font-family: inherit;
+}
+
+// taps fire right away (no double-tap-zoom wait) and a quick tap never selects the label
+button,
+a,
+[role="button"],
+[role="tab"],
+summary,
+label {
+    touch-action: manipulation;
+}
+
+button,
+[role="button"],
+[role="tab"] {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+// keyboard users get a clear ring, mouse clicks don't
+:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+// press feedback for plain (non framer) buttons. scale down on press, spring back on release
+.press {
+    transition: transform 0.16s var(--ease-out);
+
+    &:active:not(:disabled):not([aria-disabled="true"]) {
+        transform: scale(0.97);
+        transition-duration: 0.08s;
+    }
+}
+
+// same, for wide things like list rows where 0.97 would look like a jump
+.press-soft {
+    transition: transform 0.16s var(--ease-out);
+
+    &:active:not(:disabled) {
+        transform: scale(0.995);
+        transition-duration: 0.08s;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .press:active,
+    .press-soft:active {
+        transform: none !important;
+    }
 }
 
 code,
@@ -202,7 +315,7 @@ pre {
 @media (prefers-reduced-motion: reduce) {
     .homepage-text-reveal .text-reveal {
         filter: none !important;
-        transition: opacity 0.2s ease !important;
+        transition: opacity 0.2s var(--ease-out) !important;
     }
 
     .homepage-text-reveal .text-reveal::after {
@@ -273,7 +386,7 @@ pre {
     background-color: transparent;
     border: 1px solid transparent;
     border-radius: 8px;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -336,7 +449,7 @@ pre {
     border-radius: 10px;
     color: var(--text-color);
     cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    transition: transform 0.2s var(--ease-out), border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
     @include hover {
@@ -489,7 +602,7 @@ pre {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 
     // outline effect using box-shadow
     padding: 3px;
@@ -576,7 +689,7 @@ pre {
     border-radius: 10px;
     color: var(--text-color);
     cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    transition: transform 0.2s var(--ease-out), border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out);
 
     @include hover {
         transform: translateY(-1px);
@@ -807,7 +920,7 @@ pre {
 .vertical-divider,
 .theme-buttons-container,
 .mobile-menu-wrapper {
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+    transition: background-color 0.3s var(--ease-out), border-color 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), color 0.3s var(--ease-out), opacity 0.3s var(--ease-out);
 }
 
 // Custom grid for projects page to guarantee 2 columns
@@ -824,19 +937,41 @@ pre {
 
 
 .footer-spacer {
-    height: 64px;
+    height: 0;
+}
+
+// footer: a dithered pixel mountain range (drawn in SiteFooter.tsx)
+.site-footer {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    overflow: hidden;
+    pointer-events: none;
 
     @media (max-width: 639px) {
-        height: 24px;
+        height: 240px;
     }
+}
 
-    &.compact {
-        height: 16px;
+.site-footer-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+}
 
-        @media (max-width: 639px) {
-            height: 8px;
-        }
-    }
+.site-footer-row {
+    position: relative;
+    width: 96%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--c-text-muted);
+    pointer-events: auto;
 }
 
 .back-to-home-wrapper {
@@ -854,7 +989,7 @@ pre {
 // Project detail page sticky header
 .project-detail-header {
     background-color: transparent;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s var(--ease-out);
 }
 
 // When it is actually stuck at the top (scrolled down)
@@ -866,7 +1001,7 @@ pre {
             inset: 0;
             z-index: -1;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s var(--ease-out);
             pointer-events: none;
         }
     }
@@ -903,7 +1038,7 @@ pre {
 
 .cursor-bloom {
     opacity: 0;
-    transition: opacity 0.45s ease;
+    transition: opacity 0.45s var(--ease-out);
     background: radial-gradient(circle 340px at var(--cursor-x) var(--cursor-y),
             var(--cursor-bloom-color) 0%, transparent 62%);
 }
@@ -973,7 +1108,7 @@ body.custom-cursor-active.custom-cursor-text * {
     pointer-events: none;
     z-index: 9999;
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s var(--ease-out);
 }
 
 body.custom-cursor-text .paper-cursor-root {
@@ -1000,7 +1135,7 @@ body.custom-cursor-text .paper-cursor-root {
     height: 18px;
     overflow: visible;
     filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
-    transition: filter 0.2s ease;
+    transition: filter 0.2s var(--ease-out);
 }
 
 .paper-cursor-shape {
@@ -1015,18 +1150,18 @@ body.custom-cursor-text .paper-cursor-root {
     stroke-linejoin: round;
     stroke-linecap: round;
     paint-order: stroke fill;
-    transition: fill 0.2s ease, stroke 0.2s ease;
+    transition: fill 0.2s var(--ease-out), stroke 0.2s var(--ease-out);
 }
 
 /* Faceted metallic shading */
 .cursor-facet-top {
     fill: url(#cursor-facet-left-grad);
-    transition: fill 0.2s ease;
+    transition: fill 0.2s var(--ease-out);
 }
 
 .cursor-facet-bottom {
     fill: url(#cursor-facet-right-grad);
-    transition: fill 0.2s ease;
+    transition: fill 0.2s var(--ease-out);
 }
 
 /* Fine central spine ridge */
@@ -1034,7 +1169,7 @@ body.custom-cursor-text .paper-cursor-root {
     stroke: rgba(255, 255, 255, 0.5);
     stroke-width: 0.8;
     stroke-linecap: round;
-    transition: stroke 0.2s ease;
+    transition: stroke 0.2s var(--ease-out);
 }
 
 /* Core accent conduit */
@@ -1043,7 +1178,7 @@ body.custom-cursor-text .paper-cursor-root {
     stroke-width: 1.2;
     stroke-linecap: round;
     opacity: 0.9;
-    transition: stroke 0.2s ease, opacity 0.2s ease;
+    transition: stroke 0.2s var(--ease-out), opacity 0.2s var(--ease-out);
 }
 
 /* dark mode cursor: crisp white paper plane with a thin dark rim and silver-white shading */
@@ -1221,7 +1356,7 @@ body.custom-cursor-text .paper-cursor-root {
     font-family: inherit;
     font-size: 0.875rem;
     font-weight: 500;
-    transition: background-color 0.12s ease;
+    transition: background-color 0.12s var(--ease-out);
     scroll-margin: 8px;
 }
 
@@ -1351,7 +1486,7 @@ body.custom-cursor-text .paper-cursor-root {
 
 /* GitHub contribution hover effect */
 .contrib-cell {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
 }
 
 .contrib-cell {

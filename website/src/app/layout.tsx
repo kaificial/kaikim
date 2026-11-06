@@ -11,8 +11,10 @@ import ScrollToTop from "../components/ScrollToTop";
 import InteractiveGrid from "../components/InteractiveGrid";
 import CommandPalette from "../components/CommandPalette";
 import FloatingDock from "../components/FloatingDock";
+import SiteFooter from "../components/SiteFooter";
 import CustomCursor from "../components/CustomCursor";
 import { SfxBoot } from "../lib/sfx/react";
+import { MotionProvider } from "../components/MotionProvider";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -162,16 +164,19 @@ export default function RootLayout({
             <body className={`${inter.variable} ${jetbrainsMono.variable} ${sourceSerif.variable}`}>
                 <ThemeProvider>
                     <AudioProvider>
+                    <MotionProvider>
                         <InteractiveGrid />
                         <ScrollToTop />
                         <Header />
                         <main>
                             {children}
                         </main>
+                        <SiteFooter />
                         <CommandPalette />
                         <FloatingDock />
                         <CustomCursor />
                         <SfxBoot />
+                    </MotionProvider>
                     </AudioProvider>
                 </ThemeProvider>
             </body>

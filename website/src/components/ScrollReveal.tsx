@@ -45,11 +45,11 @@ export function ScrollReveal({
 
             // animation configurations
             const animations = {
-                fadeUp: { y: 60, opacity: 0 },
-                fadeDown: { y: -60, opacity: 0 },
-                fadeLeft: { x: -60, opacity: 0 },
-                fadeRight: { x: 60, opacity: 0 },
-                scale: { scale: 0.8, opacity: 0 },
+                fadeUp: { y: 24, opacity: 0 },
+                fadeDown: { y: -24, opacity: 0 },
+                fadeLeft: { x: -24, opacity: 0 },
+                fadeRight: { x: 24, opacity: 0 },
+                scale: { scale: 0.95, opacity: 0 },
                 fade: { opacity: 0 },
             };
 

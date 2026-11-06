@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../components/ThemeContext';
 import { useUISound } from '../../hooks/use-ui-sound';
 import Image from 'next/image';
@@ -38,13 +38,6 @@ export default function ProjectsPage() {
         }));
     };
 
-    const { scrollYProgress } = useScroll();
-    const scaleX = useSpring(scrollYProgress, {
-        stiffness: 100,
-        damping: 30,
-        restDelta: 0.001
-    });
-
     const filteredProjects = projects.filter(project => {
         const query = searchQuery.toLowerCase();
         return (
@@ -56,21 +49,6 @@ export default function ProjectsPage() {
 
     return (
         <div className="w-full">
-            {/* Scroll Progress Bar */}
-            <motion.div
-                style={{
-                    scaleX,
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    backgroundColor: '#2563eb',
-                    transformOrigin: '0%',
-                    zIndex: 9999
-                }}
-            />
-
             <div style={{
                 width: '96%',
                 maxWidth: '1400px',
@@ -140,7 +118,7 @@ export default function ProjectsPage() {
                                     color: isDark ? '#f5f5f5' : '#1c1917',
                                     fontSize: '1rem',
                                     outline: 'none',
-                                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
+                                    transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
                                     boxShadow: isDark ? 'none' : '0 2px 4px rgba(0,0,0,0.02)'
                                 }}
                                 onFocus={(e) => {
@@ -288,8 +266,6 @@ export default function ProjectsPage() {
                                                     {project.tags.map((tech, i) => (
                                                         <motion.span
                                                             key={i}
-                                                            whileHover={{ scale: 1.05 }}
-                                                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                                             style={{
                                                                 display: 'inline-block',
                                                                 padding: '4px 12px',
@@ -335,7 +311,7 @@ export default function ProjectsPage() {
                                                                     alignItems: 'center',
                                                                     gap: '6px',
                                                                     textDecoration: 'none',
-                                                                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease'
+                                                                    transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)'
                                                                 }}
                                                             >
                                                                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,7 +345,7 @@ export default function ProjectsPage() {
                                                                     gap: '6px',
                                                                     textDecoration: 'none',
                                                                     border: `1px solid ${isDark ? '#2a2a2a' : '#d1d5db'}`,
-                                                                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease'
+                                                                    transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)'
                                                                 }}
                                                             >
                                                                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
@@ -442,7 +418,7 @@ export default function ProjectsPage() {
                                 borderRadius: '8px',
                                 border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
                                 backgroundColor: isDark ? '#141414' : 'white',
-                                transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
+                                transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
                                 textDecoration: 'none'
                             }}
                             onPointerEnter={mouseOnly((e: React.PointerEvent<HTMLAnchorElement>) => {

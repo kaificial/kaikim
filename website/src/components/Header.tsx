@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useMotionTemplate } from "framer-motion";
 import { createPortal } from "react-dom";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Sun, Moon, Github, GitCommitHorizontal, GitPullRequest, GitMerge } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeContext";
 import { useAudio } from "./AudioContext";
 import { useUISound } from "../hooks/use-ui-sound";
 import { sfx } from "../lib/sfx";
-import { mouseOnly, PRESS } from '../styles/motion';
+import { EASE_OUT, HOVER_PILL, mouseOnly, PRESS, TOOLTIP } from '../styles/motion';
+import { useIslandActivity } from '../lib/island';
+import { timeAgo, useLastCommitActivity } from '../hooks/use-last-commit';
 
 // 7 × 6 pixel heart. "#" = outline, "o" = fill (only once liked), "*" = highlight
 const HEART_PIXELS = [
@@ -49,6 +51,15 @@ const navLinks = [
 ];
 
 const ISLAND_SPRING = { type: "spring", stiffness: 280, damping: 30 } as const;
+/** how far the floating island sits from the top of the screen */
+const FLOAT_TOP = 12;
+
+// github activity in the island: the trailing icon says what kind of thing happened
+const GIT_ACTIVITY = {
+    push: { Icon: GitCommitHorizontal, verb: 'Pushed to' },
+    pr: { Icon: GitPullRequest, verb: 'Opened PR in' },
+    merge: { Icon: GitMerge, verb: 'Merged PR in' },
+} as const;
 
 const MARQUEE_PERIOD_S = 10;
 const Marquee = ({ label }: { label: string }) => {
@@ -83,6 +94,25 @@ const MusicWidget = () => {
     const [islandPresent, setIslandPresent] = useState(false);
     const [slotRect, setSlotRect] = useState<{ top: number; left: number } | null>(null);
     const [winW, setWinW] = useState(0);
+    // once the header scrolls away, a copy of the pill floats at the top of the screen like a dynamic island
+    const floatRef = useRef<HTMLDivElement | null>(null);
+    const [docked, setDocked] = useState(true);
+    // coming back from the expanded island, the floating pill should just be there, not drop in again
+    const [floatInstant, setFloatInstant] = useState(false);
+    const activity = useIslandActivity();
+    useLastCommitActivity();
+    // reading progress: a ring round the album art that fills as you scroll the page
+    const { scrollYProgress } = useScroll();
+    const readPct = useTransform(scrollYProgress, [0, 1], [0, 100]);
+    const ringBg = useMotionTemplate`conic-gradient(#3b82f6 ${readPct}%, rgba(255,255,255,0.12) 0)`;
+
+    useEffect(() => {
+        const el = slotRef.current;
+        if (!el) return;
+        const io = new IntersectionObserver(([e]) => { setDocked(e.isIntersecting); setFloatInstant(false); }, { threshold: 0 });
+        io.observe(el);
+        return () => io.disconnect();
+    }, []);
 
     useEffect(() => {
         const update = () => setWinW(window.innerWidth);
@@ -94,13 +124,18 @@ const MusicWidget = () => {
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as Node;
-            const insideSlot = slotRef.current?.contains(target);
+            const insideSlot = slotRef.current?.contains(target) || floatRef.current?.contains(target);
             const insideExpanded = isExpanded && widgetRef.current?.contains(target);
             if (insideSlot || insideExpanded) return;
 
             if (isExpanded) {
-                const r = slotRef.current?.getBoundingClientRect();
-                if (r) setSlotRect({ top: r.top, left: r.left });
+                if (docked) {
+                    const r = slotRef.current?.getBoundingClientRect();
+                    if (r) setSlotRect({ top: r.top, left: r.left });
+                } else {
+                    setSlotRect({ top: FLOAT_TOP, left: (document.documentElement.clientWidth - 150) / 2 });
+                }
+                setFloatInstant(!docked);
                 requestAnimationFrame(() => setIsExpanded(false));
             }
             // Clear for mobile device touch 
@@ -109,7 +144,7 @@ const MusicWidget = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isExpanded]);
+    }, [isExpanded, docked]);
 
     const togglePlay = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -197,6 +232,11 @@ const MusicWidget = () => {
     const fullExit = { opacity: 0, scale: 0.45, ...(!slotAligned && { transition: scrolledExit }) };
 
     const measureSlot = () => {
+        if (!docked) {
+            // header's scrolled away: the pill lives at the top of the screen (same spot as the floating island)
+            setSlotRect({ top: FLOAT_TOP, left: (document.documentElement.clientWidth - 150) / 2 });
+            return;
+        }
         const r = slotRef.current?.getBoundingClientRect();
         if (r) setSlotRect({ top: r.top, left: r.left });
     };
@@ -204,6 +244,7 @@ const MusicWidget = () => {
     const collapse = () => {
         playClick();
         measureSlot();
+        setFloatInstant(!docked);
         requestAnimationFrame(() => setIsExpanded(false));
     };
 
@@ -226,17 +267,17 @@ const MusicWidget = () => {
                     animation: isPlaying
                         ? `wave-bar ${w.duration}s ease-in-out -${w.offset}s infinite`
                         : 'none',
-                    transition: 'background-color 0.2s ease, height 0.15s ease',
+                    transition: 'background-color 0.2s var(--ease-out), height 0.15s var(--ease-out)',
                 } as React.CSSProperties}
             />
         ))
     );
 
-    const collapsedContent = (
+    const musicContent = (
         <div style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, padding: 2, boxSizing: 'border-box', backgroundColor: 'rgba(255,255,255,0.12)' }}>
+            <motion.div aria-hidden style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, padding: 2, boxSizing: 'border-box', background: ringBg }}>
                 <div style={{ width: '100%', height: '100%', borderRadius: 6, backgroundImage: `url(${currentTrack.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-            </div>
+            </motion.div>
             <Marquee label={`${currentTrack.title} • ${currentTrack.artist}`} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, paddingRight: 4, flexShrink: 0 }}>
                 {isPlaying ? (
@@ -274,6 +315,51 @@ const MusicWidget = () => {
                     <SkipForward size={14} color={waveInactiveColor} fill={waveInactiveColor} />
                 </motion.div>
             </div>
+        </div>
+    );
+
+    const activityContent = activity?.kind === 'theme' ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', height: '100%', paddingLeft: 6 }}>
+            {/* sun or moon, rotates in a bit */}
+            <motion.span
+                initial={{ rotate: activity.dark ? -45 : 45, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: EASE_OUT }}
+                style={{ display: 'flex' }}
+            >
+                {activity.dark
+                    ? <Moon size={14} color="#d1d5db" strokeWidth={1.75} />
+                    : <Sun size={14} color="#d1d5db" strokeWidth={1.75} />}
+            </motion.span>
+            <span style={{ color: '#f5f5f5', fontSize: '0.72rem', fontWeight: 600 }}>{activity.dark ? 'Dark mode' : 'Light mode'}</span>
+        </div>
+    ) : activity?.kind === 'commit' ? (
+        <div style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%', paddingLeft: 6 }}>
+            <Github size={15} color="#f5f5f5" style={{ flexShrink: 0 }} />
+            <Marquee label={`${GIT_ACTIVITY[activity.type].verb} ${activity.repo} · ${timeAgo(activity.at)}${activity.message ? ` · ${activity.message}` : ''}`} />
+            {(() => {
+                const { Icon } = GIT_ACTIVITY[activity.type];
+                return <Icon aria-hidden size={13} strokeWidth={1.75} color="#9ca3af" style={{ flexShrink: 0, marginRight: 3 }} />;
+            })()}
+        </div>
+    ) : null;
+
+    // live activities slide in over the music and hand it back when they're done
+    const collapsedContent = (
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <AnimatePresence mode="popLayout" initial={false}>
+                <motion.div
+                    key={activity ? `activity-${activity.key}` : 'music'}
+                    initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+                    transition={{ duration: 0.3, ease: EASE_OUT }}
+                    style={{ width: '100%', height: '100%' }}
+                    aria-live="polite"
+                >
+                    {activity ? activityContent : musicContent}
+                </motion.div>
+            </AnimatePresence>
         </div>
     );
 
@@ -455,6 +541,49 @@ const MusicWidget = () => {
             )}
 
             {mounted && createPortal(
+                <AnimatePresence custom={islandPresent}>
+                    {!docked && !islandPresent && (
+                        <motion.div
+                            ref={floatRef}
+                            key="floating-island"
+                            onClick={expand}
+                            custom={islandPresent}
+                            variants={{
+                                hidden: { y: -56, opacity: 0, scale: 0.92, x: '-50%' },
+                                shown: { y: 0, opacity: 1, scale: 1, x: '-50%', transition: ISLAND_SPRING },
+                                // expanding: the big island takes over from exactly here, so vanish at once
+                                gone: (expanding: boolean) => expanding
+                                    ? { opacity: 0, x: '-50%', transition: { duration: 0 } }
+                                    : { y: -56, opacity: 0, scale: 0.92, x: '-50%', transition: { duration: 0.25, ease: EASE_OUT } },
+                            }}
+                            initial={floatInstant ? false : 'hidden'}
+                            animate="shown"
+                            exit="gone"
+                            style={{
+                                position: 'fixed',
+                                top: FLOAT_TOP,
+                                left: '50%',
+                                width: 150,
+                                height: 36,
+                                boxSizing: 'border-box',
+                                padding: '3px 12px 3px 3px',
+                                borderRadius: 10,
+                                backgroundColor: bg,
+                                border: `1px solid ${borderColor}`,
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.2)',
+                                overflow: 'hidden',
+                                cursor: 'pointer',
+                                zIndex: 1050,
+                            }}
+                        >
+                            {collapsedContent}
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
+
+            {mounted && createPortal(
                 <AnimatePresence>
                     {isWidgetHovered && !isExpanded && hoverText && (() => {
                         const T = hoverText === "Click to Expand" ? 125 : hoverText === "Pause Song" ? 85 : 80;
@@ -468,11 +597,12 @@ const MusicWidget = () => {
 
                         return (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
+                                initial={{ opacity: 0, scale: 0.96 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                transition={{ duration: 0.15, ease: "easeOut" }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                transition={{ duration: 0.14, ease: EASE_OUT }}
                                 style={{
+                                    transformOrigin: 'top center',
                                     position: 'fixed',
                                     top: mousePos.y + 10,
                                     left: tooltipLeft,
@@ -516,7 +646,7 @@ const MusicWidget = () => {
 
 export default function Header() {
     const pathname = usePathname();
-    const { isDark } = useTheme();
+    const { isDark, toggleTheme } = useTheme();
     const { playClick } = useUISound();
     const [count, setCount] = useState(0);
     const [displayCount, setDisplayCount] = useState(0);
@@ -653,10 +783,11 @@ export default function Header() {
                         <AnimatePresence>
                             {isHovered && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95, x: '-50%' }}
-                                    animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95, x: '-50%' }}
+                                    initial={{ ...TOOLTIP.initial, x: '-50%' }}
+                                    animate={{ ...TOOLTIP.animate, x: '-50%' }}
+                                    exit={{ ...TOOLTIP.exit, x: '-50%' }}
                                     style={{
+                                        transformOrigin: 'bottom center',
                                         position: 'absolute',
                                         bottom: 'calc(100% + 2px)',
                                         left: '50%',
@@ -689,9 +820,8 @@ export default function Header() {
 
                         <motion.button
                             onClick={() => { sfx.like(!hasLiked); handleLikeClick(); }}
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={HOVER_PILL}
                             whileTap={PRESS}
-                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -708,7 +838,7 @@ export default function Header() {
                                 fontSize: '0.875rem',
                                 fontWeight: '600',
                                 boxShadow: hasLiked ? '0 2px 10px rgba(37, 99, 235, 0.15)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
-                                transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease'
+                                transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)'
                             }}
                         >
                             <PixelHeart

@@ -2,6 +2,7 @@
 
 import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
 import React from 'react';
+import { HOVER_CARD, SPRING } from '../styles/motion';
 
 interface SpotlightCardProps {
     children: React.ReactNode;
@@ -34,11 +35,8 @@ export const SpotlightCard = ({ children, isDark, noPadding = false, spotlight =
         <motion.div
             onMouseMove={handleMouseMove}
             className="group relative"
-            initial={{ scale: 0.99 }}
-            whileInView={{ scale: 0.99 }}
-            whileHover={{ scale: 1.01, y: -5 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            // lift only: scaling a card blurs its text and video, and a slow hover feels laggy
+            whileHover={{ ...HOVER_CARD, transition: SPRING }}
             style={{
                 border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
                 borderRadius: '8px',

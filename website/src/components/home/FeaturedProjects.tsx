@@ -6,15 +6,18 @@ import { projects } from '../../data/projects';
 import { cssVar } from '../../styles/palette';
 import { rt, SectionHeading } from './TextReveal';
 import { ProjectCard } from './ProjectCard';
-import { mouseOnly } from '../../styles/motion';
+import { EASE_OUT, mouseOnly } from '../../styles/motion';
+
+// home sections come in top to bottom on load: experience 1.8s, education 2.2s, projects, then skills
+const SECTION_DELAY = 2.6;
+const CARD_STAGGER = 0.12;
 
 export const FeaturedProjects = () => (
     <motion.section
         style={{ marginTop: '48px' }}
-        initial={{ opacity: 0, y: 15 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: SECTION_DELAY, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
     >
         <div style={{
             display: 'flex',
@@ -24,14 +27,23 @@ export const FeaturedProjects = () => (
             flexWrap: 'wrap',
             marginBottom: '20px'
         }}>
-            <SectionHeading marginBottom={0}>{rt('Featured Projects', 8)}</SectionHeading>
+            <SectionHeading marginBottom={0}>{rt('Projects', 8)}</SectionHeading>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+        <div className="projects-grid" style={{ gridTemplateColumns: '1fr' }}>
             {projects
                 .filter(p => p.id !== 'portfolio')
                 .map((project, i) => (
-                    <ProjectCard key={project.id} project={project} index={i} />
+                    // cards follow the heading in, one after another
+                    <motion.div
+                        key={project.id}
+                        className="h-full"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: SECTION_DELAY + 0.2 + i * CARD_STAGGER, duration: 0.6, ease: EASE_OUT }}
+                    >
+                        <ProjectCard project={project} index={i} />
+                    </motion.div>
                 ))}
         </div>
 

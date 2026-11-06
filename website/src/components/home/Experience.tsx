@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../ThemeContext';
 import { cssVar, usePalette } from '../../styles/palette';
 import { rt, SectionHeading } from './TextReveal';
-import { DURATION, EASE_OUT, exitFor, mouseOnly, PRESS } from '../../styles/motion';
+import { DURATION, EASE_OUT, exitFor, mouseOnly } from '../../styles/motion';
 import { sfx } from '../../lib/sfx';
 
 type Job = {
@@ -27,7 +27,7 @@ type Job = {
 
 const JOBS: Job[] = [
     { id: 'cibc', company: 'CIBC', role: 'Intern', dates: 'May 2026 - Aug. 2026', logo: '/assets/cibc.png', slots: [5.8, 5.85, 5.9], invertIn: 'light', autoSize: true },
-    { id: 'qmind', company: 'QMIND', role: 'AI Engineer', dates: 'Oct. 2025 - May 2026', logo: '/assets/QMIND_logo.png', slots: [5.8, 5.9, 5.95] },
+    { id: 'qmind', company: 'QMIND', role: 'AI Engineer', dates: 'Sept. 2025 - Present', logo: '/assets/QMIND_logo.png', slots: [5.8, 5.9, 5.95] },
     { id: 'qbit', company: 'QBiT', role: 'Software Engineer', dates: 'Sept. 2025 - May 2026', logo: '/assets/QBiT_Logo-1.png', slots: [6.2, 6.25, 6.3], invertIn: 'dark', autoSize: true, detailsStyle: { marginLeft: '52px', marginTop: '4px' } },
     { id: 'zeen', company: 'Zeen', role: 'Software Engineer', dates: 'May 2024 - Aug. 2024', logo: '/assets/zeen.jpg', slots: [6.6, 6.65, 6.7] },
 ];
@@ -72,42 +72,32 @@ const ExperienceItem = ({ job, expanded, onToggle }: { job: Job; expanded: boole
                     <span className="experience-date" style={{ fontSize: '0.875rem', color: cssVar.textMuted, whiteSpace: 'nowrap' }}>
                         {rt(job.dates, job.slots[2])}
                     </span>
-                    <motion.button
-                        className="experience-btn"
+                    <button
+                        className="experience-btn press"
                         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-                        animate={{
-                            backgroundColor: c.chipBg,
-                            color: c.chipFg,
-                            borderColor: c.chipBorder,
-                        }}
-                        whileHover={{
-                            scale: 1.05,
-                            backgroundColor: c.chipHoverBg,
-                            color: c.chipHoverFg,
-                            borderColor: c.chipHoverBorder
-                        }}
-                        whileTap={PRESS}
                         style={{
-                            border: `1px solid ${c.chipBorder}`,
-                            background: c.chipBg,
-                            color: c.chipFg,
-                            fontSize: '0.7rem',
-                            cursor: 'pointer',
-                            padding: '3px 8px',
+                            background: cssVar.chipBg,
+                            border: `1px solid ${cssVar.chipBorder}`,
                             borderRadius: '9999px',
-                            textAlign: 'left',
+                            padding: '2px 8px',
+                            color: cssVar.textMuted,
+                            fontSize: '0.75rem',
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            fontWeight: '500',
-                            marginTop: '4px'
+                            gap: '2px',
+                            marginTop: '4px',
+                            transition: 'color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), transform 0.16s var(--ease-out)'
                         }}
+                        onPointerEnter={mouseOnly((e) => { e.currentTarget.style.color = c.textStrong; e.currentTarget.style.borderColor = c.chipHoverBorder; e.currentTarget.style.background = c.chipHoverBg; })}
+                        onPointerLeave={mouseOnly((e) => { e.currentTarget.style.color = cssVar.textMuted; e.currentTarget.style.borderColor = cssVar.chipBorder; e.currentTarget.style.background = cssVar.chipBg; })}
                     >
                         {expanded ? 'Show less' : 'Read more'}
                         <motion.svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" animate={{ rotate: expanded ? 180 : 0 }}>
                             <path d="M2 4l4 4 4-4" />
                         </motion.svg>
-                    </motion.button>
+                    </button>
                 </div>
             </div>
 

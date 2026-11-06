@@ -3,10 +3,12 @@
 import type { CaseFormat, MediaEntry } from "../../data/media";
 import { BLURAY_BLUE, inkOn, NEUTRAL_SPINE, type CaseDims } from "./formats";
 import { spineFont } from "./fonts";
+import { FormatLogo } from "./FormatLogo";
 
-const FOOT_LABEL: Record<CaseFormat, (m: MediaEntry) => string> = {
-    dvd: () => 'DVD',
-    bluray: () => 'BD',
+/** what's printed at the foot of the spine. blu-rays carry their mark in the band up top instead */
+const FOOT_LABEL: Record<CaseFormat, (m: MediaEntry, ink: string) => React.ReactNode> = {
+    dvd: (_m, ink) => <FormatLogo kind="dvd" width="78%" color={ink} />,
+    bluray: () => null,
     vhs: () => 'VHS',
     boxset: (m) => (m.seasons ? `S1–${m.seasons}` : 'SET'),
 };
@@ -42,8 +44,8 @@ export const Spine = ({ entry, format, dims, scale = 1 }: { entry: MediaEntry; f
             }}
         >
             {format === 'bluray' && (
-                <div style={{ width: '100%', height: '2.1em', background: BLURAY_BLUE, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.62em', fontWeight: 800, letterSpacing: '0.04em' }}>
-                    BD
+                <div style={{ width: '100%', height: '2.1em', background: BLURAY_BLUE, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FormatLogo kind="bluray" width="80%" color="#fff" />
                 </div>
             )}
             <div style={{
@@ -65,9 +67,11 @@ export const Spine = ({ entry, format, dims, scale = 1 }: { entry: MediaEntry; f
             <div style={{ writingMode: 'vertical-rl', fontSize: `${Math.min(d * 0.42, 1)}em`, fontWeight: 600, opacity: 0.75, paddingBottom: '0.5em', fontVariantNumeric: 'tabular-nums' }}>
                 {entry.year}
             </div>
-            <div style={{
+            {format !== 'bluray' && <div style={{
                 width: '100%',
                 flexShrink: 0,
+                display: 'flex',
+                justifyContent: 'center',
                 padding: '0.35em 0',
                 borderTop: `1px solid ${ink === '#111111' ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.22)'}`,
                 textAlign: 'center',
@@ -76,8 +80,8 @@ export const Spine = ({ entry, format, dims, scale = 1 }: { entry: MediaEntry; f
                 letterSpacing: '0.02em',
                 whiteSpace: 'nowrap',
             }}>
-                {FOOT_LABEL[format](entry)}
-            </div>
+                {FOOT_LABEL[format](entry, ink)}
+            </div>}
             {/* light catching the curved plastic edge */}
             <div aria-hidden style={{
                 position: 'absolute',

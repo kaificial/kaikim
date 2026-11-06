@@ -2,48 +2,71 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from './ThemeContext';
 import { sfx } from '../lib/sfx';
 import { SpeakerIcon, setSfxMuted, useSfxMuted } from '../lib/sfx/react';
-import { mouseOnly, PRESS } from '../styles/motion';
+import { HOVER_ICON, mouseOnly, PRESS, TOOLTIP } from '../styles/motion';
 
 interface TooltipProps {
     text: string;
 }
 
-const Tooltip = ({ text }: TooltipProps) => (
-    <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.8, x: '-50%' }}
-        animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
-        exit={{ opacity: 0, y: 10, scale: 0.8, x: '-50%' }}
-        style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 12px)',
-            left: '50%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            fontSize: '0.75rem',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            zIndex: 1001
-        }}
-    >
-        {text}
-        <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            borderLeft: '4px solid transparent',
-            borderRight: '4px solid transparent',
-            borderTop: '4px solid rgba(0, 0, 0, 0.8)'
-        }} />
-    </motion.div>
-);
+// matches the photo captions in the hero
+const Tooltip = ({ text }: TooltipProps) => {
+    const { isDark } = useTheme();
+    const bg = isDark ? '#181818' : 'white';
+    const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+    return (
+        <motion.div
+            initial={{ ...TOOLTIP.initial, x: '-50%' }}
+            animate={{ ...TOOLTIP.animate, x: '-50%' }}
+            exit={{ ...TOOLTIP.exit, x: '-50%' }}
+            style={{
+                transformOrigin: 'bottom center',
+                position: 'absolute',
+                bottom: 'calc(100% + 12px)',
+                left: '50%',
+                backgroundColor: bg,
+                color: isDark ? '#f5f5f5' : '#1f2937',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                border: `1px solid ${border}`,
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+                zIndex: 1001
+            }}
+        >
+            {text}
+            <div style={{
+                position: 'absolute',
+                bottom: '-5px',
+                left: 'calc(50% - 5px)',
+                width: '10px',
+                height: '10px',
+                backgroundColor: bg,
+                transform: 'rotate(45deg)',
+                borderBottom: `1px solid ${border}`,
+                borderRight: `1px solid ${border}`,
+            }} />
+        </motion.div>
+    );
+};
+
+const DockDivider = () => {
+    const { isDark } = useTheme();
+    return (
+        <motion.div
+            variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
+            className="mobile-hide"
+            style={{ width: '1px', height: '20px', backgroundColor: isDark ? '#3a3a3a' : '#d1d5db', margin: '0 4px', flexShrink: 0 }}
+        />
+    );
+};
 
 export default function FloatingDock() {
     const pathname = usePathname();
@@ -52,7 +75,7 @@ export default function FloatingDock() {
     const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
     const soundMuted = useSfxMuted();
     // each dock slot is a note in the scale, so sweeping across the dock plays it
-    const DEGREE: Record<string, number> = { command: 0, home: 1, projects: 2, writing: 3, github: 4, x: 5, linkedin: 6, resume: 7, contact: 8, theme: 9, sound: 10 };
+    const DEGREE: Record<string, number> = { command: 0, home: 1, projects: 2, writing: 3, github: 4, x: 5, linkedin: 6, resume: 7, contact: 8, sound: 9, theme: 10 };
     const enter = (id: string) => mouseOnly(() => { setHoveredIcon(id); sfx.hover({ degree: DEGREE[id] }); });
 
     const handleHomeClick = () => {
@@ -131,12 +154,12 @@ export default function FloatingDock() {
             <motion.div
                 className="mobile-hide"
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8, y: 10 },
+                    hidden: { opacity: 0, scale: 0.95, y: 10 },
                     visible: { opacity: 1, scale: 1, y: 0 }
                 }}
                 onPointerEnter={enter('command')}
                 onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                whileHover={{ scale: 1.1, y: -2 }}
+                whileHover={HOVER_ICON}
                 whileTap={PRESS}
                 style={{ position: 'relative' }}
             >
@@ -152,7 +175,7 @@ export default function FloatingDock() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: hoveredIcon === 'command' ? (isDark ? '#f5f5f5' : 'black') : (isDark ? '#8f8f8f' : '#6b7280'),
-                        transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
+                        transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
                         border: 'none',
                         cursor: 'pointer',
                         padding: 0
@@ -169,7 +192,7 @@ export default function FloatingDock() {
             <motion.div
                 className="mobile-hide"
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8 },
+                    hidden: { opacity: 0, scale: 0.95 },
                     visible: { opacity: 1, scale: 1 }
                 }}
                 style={{ width: '1px', height: '20px', backgroundColor: isDark ? '#3a3a3a' : '#d1d5db', margin: '0 4px' }}
@@ -178,12 +201,12 @@ export default function FloatingDock() {
             {/* Home */}
             <motion.div
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8, y: 10 },
+                    hidden: { opacity: 0, scale: 0.95, y: 10 },
                     visible: { opacity: 1, scale: 1, y: 0 }
                 }}
                 onPointerEnter={enter('home')}
                 onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                whileHover={{ scale: 1.1, y: -2 }}
+                whileHover={HOVER_ICON}
                 whileTap={PRESS}
                 style={{ position: 'relative' }}
             >
@@ -199,7 +222,7 @@ export default function FloatingDock() {
                         justifyContent: 'center',
                         boxShadow: (pathname === "/" && !isDark) ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
                         color: (pathname === "/" || hoveredIcon === "home") ? (isDark ? '#f5f5f5' : 'black') : (isDark ? '#8f8f8f' : '#6b7280'),
-                        transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
+                        transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
                         border: 'none',
                         cursor: 'pointer',
                         padding: 0
@@ -217,12 +240,12 @@ export default function FloatingDock() {
             {/* Projects */}
             <motion.div
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8, y: 10 },
+                    hidden: { opacity: 0, scale: 0.95, y: 10 },
                     visible: { opacity: 1, scale: 1, y: 0 }
                 }}
                 onPointerEnter={enter('projects')}
                 onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                whileHover={{ scale: 1.1, y: -2 }}
+                whileHover={HOVER_ICON}
                 whileTap={PRESS}
                 style={{ position: 'relative' }}
             >
@@ -238,7 +261,7 @@ export default function FloatingDock() {
                         justifyContent: 'center',
                         boxShadow: (pathname === "/projects" && !isDark) ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
                         color: (pathname === "/projects" || hoveredIcon === "projects") ? (isDark ? '#f5f5f5' : 'black') : (isDark ? '#8f8f8f' : '#6b7280'),
-                        transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
+                        transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
                         border: 'none',
                         cursor: 'pointer',
                         padding: 0
@@ -257,12 +280,12 @@ export default function FloatingDock() {
             {/* Writing */}
             <motion.div
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8, y: 10 },
+                    hidden: { opacity: 0, scale: 0.95, y: 10 },
                     visible: { opacity: 1, scale: 1, y: 0 }
                 }}
                 onPointerEnter={enter('writing')}
                 onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                whileHover={{ scale: 1.1, y: -2 }}
+                whileHover={HOVER_ICON}
                 whileTap={PRESS}
                 style={{ position: 'relative' }}
             >
@@ -278,7 +301,7 @@ export default function FloatingDock() {
                         justifyContent: 'center',
                         boxShadow: (pathname === "/writing" && !isDark) ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
                         color: (pathname === "/writing" || hoveredIcon === "writing") ? (isDark ? '#f5f5f5' : 'black') : (isDark ? '#8f8f8f' : '#6b7280'),
-                        transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease',
+                        transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
                         border: 'none',
                         cursor: 'pointer',
                         padding: 0
@@ -295,14 +318,14 @@ export default function FloatingDock() {
 
             <motion.div
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8 },
+                    hidden: { opacity: 0, scale: 0.95 },
                     visible: { opacity: 1, scale: 1 }
                 }}
                 className="mobile-hide"
                 style={{ width: '1px', height: '20px', backgroundColor: isDark ? '#3a3a3a' : '#d1d5db', margin: '0 4px' }}
             />
 
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {[
                     { id: 'github', href: "https://github.com/kaificial", label: 'GitHub', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg> },
                     { id: 'x', href: "https://x.com/kaikimto", label: 'X', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg> },
@@ -310,15 +333,16 @@ export default function FloatingDock() {
                     { id: 'resume', href: "/resume", label: 'Resume', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> },
                     { id: 'contact', href: "mailto:kaikimto@gmail.com", label: 'Mail: kaikimto@gmail.com', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> }
                 ].map((social) => (
+                    <Fragment key={social.id}>
+                    {social.id === 'resume' && <DockDivider />}
                     <motion.a
-                        key={social.id}
                         variants={{
-                            hidden: { opacity: 0, scale: 0.8, y: 10 },
+                            hidden: { opacity: 0, scale: 0.95, y: 10 },
                             visible: { opacity: 1, scale: 1, y: 0 }
                         }}
                         onPointerEnter={enter(social.id)}
                         onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                        whileHover={{ scale: 1.1, y: -2 }}
+                        whileHover={HOVER_ICON}
                         whileTap={PRESS}
                         onClick={() => sfx.press({ degree: DEGREE[social.id] })}
                         href={social.href}
@@ -333,17 +357,52 @@ export default function FloatingDock() {
                             {hoveredIcon === social.id && <Tooltip text={social.label} />}
                         </AnimatePresence>
                     </motion.a>
+                    </Fragment>
                 ))}
             </div>
 
+            <DockDivider />
+
+            {/* sound effects on/off (remembered per device) */}
             <motion.button
                 variants={{
-                    hidden: { opacity: 0, scale: 0.8, y: 10 },
+                    hidden: { opacity: 0, scale: 0.95, y: 10 },
+                    visible: { opacity: 1, scale: 1, y: 0 }
+                }}
+                onPointerEnter={enter('sound')}
+                onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
+                whileHover={HOVER_ICON}
+                whileTap={PRESS}
+                onClick={() => setSfxMuted(!soundMuted)}
+                aria-label={soundMuted ? 'Turn sound effects on' : 'Turn sound effects off'}
+                aria-pressed={!soundMuted}
+                style={{
+                    position: 'relative',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: isDark ? '#8f8f8f' : '#6b7280',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0
+                }}
+            >
+                <SpeakerIcon muted={soundMuted} size={24} filled />
+                <AnimatePresence>
+                    {hoveredIcon === 'sound' && <Tooltip text={soundMuted ? "Sound On" : "Sound Off"} />}
+                </AnimatePresence>
+            </motion.button>
+            <motion.button
+                variants={{
+                    hidden: { opacity: 0, scale: 0.95, y: 10 },
                     visible: { opacity: 1, scale: 1, y: 0 }
                 }}
                 onPointerEnter={enter('theme')}
                 onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                whileHover={{ scale: 1.1, y: -2 }}
+                whileHover={HOVER_ICON}
                 whileTap={PRESS}
                 onClick={() => { toggleTheme(); }}
                 style={{
@@ -382,38 +441,6 @@ export default function FloatingDock() {
                 </AnimatePresence>
             </motion.button>
 
-            {/* sound effects on/off (remembered per device) */}
-            <motion.button
-                variants={{
-                    hidden: { opacity: 0, scale: 0.8, y: 10 },
-                    visible: { opacity: 1, scale: 1, y: 0 }
-                }}
-                onPointerEnter={enter('sound')}
-                onPointerLeave={mouseOnly(() => setHoveredIcon(null))}
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={PRESS}
-                onClick={() => setSfxMuted(!soundMuted)}
-                aria-label={soundMuted ? 'Turn sound effects on' : 'Turn sound effects off'}
-                aria-pressed={!soundMuted}
-                style={{
-                    position: 'relative',
-                    width: '40px',
-                    height: '40px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: isDark ? '#8f8f8f' : '#6b7280',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0
-                }}
-            >
-                <SpeakerIcon muted={soundMuted} />
-                <AnimatePresence>
-                    {hoveredIcon === 'sound' && <Tooltip text={soundMuted ? "Sound On" : "Sound Off"} />}
-                </AnimatePresence>
-            </motion.button>
         </motion.div >
     );
 }

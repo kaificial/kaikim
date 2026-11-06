@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
+import { showActivity } from "../lib/island";
 import { sfx } from "../lib/sfx";
-import { runThemeTransition } from "../lib/themeTransition";
+import { runThemeTransition, THEME_WAVE_MS } from "../lib/themeTransition";
 
 interface ThemeContextType {
     isDark: boolean;
@@ -44,7 +45,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // everything has to change right away inside the transition, so react
         // commits the new colours (flushSync) before the browser grabs the new page
         const wave = runThemeTransition(() => {
-            flushSync(() => setIsDark(newTheme));
+            // show the sun/moon in the island at the same time as the new colours so the wave
+            // reveals it, and keep it up a little after
+            flushSync(() => {
+                showActivity({ kind: 'theme', dark: newTheme }, 1900 + THEME_WAVE_MS);
+                setIsDark(newTheme);
+            });
             document.documentElement.classList.toggle("dark", newTheme);
         }, newTheme);
         if (wave) sfx.themeWave(newTheme, wave);
