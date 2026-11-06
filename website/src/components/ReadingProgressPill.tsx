@@ -165,7 +165,7 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
             {/* Top row — always visible */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 {/* Left: Ring + active heading text */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: isExpanded ? '12px' : '0px', transition: 'gap 0.3s ease', overflow: 'hidden', flex: isExpanded ? 1 : 'none', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isExpanded ? '12px' : '0px', transition: 'gap 0.3s var(--ease-out)', overflow: 'hidden', flex: isExpanded ? 1 : 'none', minWidth: 0 }}>
                     {/* Progress ring */}
                     <div style={{ flexShrink: 0 }}>
                         <motion.div
@@ -202,7 +202,7 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
                                     strokeDasharray={circumference}
                                     strokeDashoffset={dashOffset}
                                     strokeLinecap="round"
-                                    style={{ transition: "stroke-dashoffset 0.3s ease" }}
+                                    style={{ transition: "stroke-dashoffset 0.3s var(--ease-out)" }}
                                 />
                             </svg>
                         </motion.div>
@@ -240,7 +240,7 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
                             fontSize: '0.7rem',
                             fontWeight: activeIndex >= 0 ? 700 : 500,
                             letterSpacing: '-0.01em',
-                            transition: 'font-weight 0.2s ease, color 0.2s ease',
+                            transition: 'font-weight 0.2s var(--ease-out), color 0.2s var(--ease-out)',
                         }}>
                             {activeText}
                         </span>
@@ -318,7 +318,7 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
                                         fontSize: '0.8125rem',
                                         fontWeight: isActive ? 600 : 400,
                                         letterSpacing: '-0.01em',
-                                        transition: 'background 0.15s ease',
+                                        transition: 'background 0.15s var(--ease-out)',
                                     }}
                                     onPointerEnter={mouseOnly((e) => {
                                         if (!isActive)
@@ -340,7 +340,7 @@ export default function ReadingProgressPill({ contentSelector = "article", proje
                                                 ? (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)')
                                                 : (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'),
                                         flexShrink: 0,
-                                        transition: 'height 0.2s ease, background 0.2s ease',
+                                        transition: 'height 0.2s var(--ease-out), background 0.2s var(--ease-out)',
                                     }} />
                                     <span style={{
                                         flex: 1,

@@ -9,7 +9,7 @@ import { useTheme } from '../ThemeContext';
 import { cssVar } from '../../styles/palette';
 import type { Project } from '../../data/projects';
 import { revealDelay, TextReveal } from './TextReveal';
-import { mouseOnly, PRESS } from '../../styles/motion';
+import { HOVER_PILL, mouseOnly, PRESS } from '../../styles/motion';
 import { sfx } from '../../lib/sfx';
 
 const STATUS_DOT: Record<string, string> = {
@@ -145,8 +145,6 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                     {visibleTags.map((tech, i) => (
                         <motion.span
                             key={tech}
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                             style={{
                                 display: 'inline-block',
                                 padding: '4px 10px',
@@ -178,7 +176,7 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                                 border: `1px dashed ${cssVar.border}`,
                                 cursor: 'pointer',
                                 fontFamily: 'inherit',
-                                transition: 'color 0.2s ease, border-color 0.2s ease'
+                                transition: 'color 0.2s var(--ease-out), border-color 0.2s var(--ease-out)'
                             }}
                             onPointerEnter={mouseOnly((e) => { e.currentTarget.style.color = HOVER_ACCENT; e.currentTarget.style.borderColor = HOVER_ACCENT; })}
                             onPointerLeave={mouseOnly((e) => { e.currentTarget.style.color = cssVar.textMuted; e.currentTarget.style.borderColor = cssVar.border; })}
@@ -207,7 +205,7 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label={`Open the ${project.title} live demo`}
-                                whileHover={{ scale: 1.05, boxShadow: linkGlow }}
+                                whileHover={{ ...HOVER_PILL, boxShadow: linkGlow }}
                                 whileTap={PRESS}
                                 style={{
                                     padding: '6px 12px',
@@ -236,7 +234,7 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label={`View the ${project.title} source on GitHub`}
-                                whileHover={{ scale: 1.05, boxShadow: linkGlow }}
+                                whileHover={{ ...HOVER_PILL, boxShadow: linkGlow }}
                                 whileTap={PRESS}
                                 transition={{ duration: 0.2 }}
                                 style={{

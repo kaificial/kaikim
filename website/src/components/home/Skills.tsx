@@ -54,7 +54,7 @@ const SkillGroup = ({ title, titleSlot, chipSlot, skills }: (typeof GROUPS)[numb
                     return (
                         <motion.span
                             key={index}
-                            variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
+                            variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
                             whileHover={{ scale: 1.1, y: -2 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                             whileTap={PRESS}
@@ -97,7 +97,7 @@ export const Skills = () => (
         style={{ marginTop: '48px' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 2.6, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ delay: 3.4, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
     >
         <SectionHeading marginBottom="16px">{rt('Skills', 7)}</SectionHeading>
 

@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import Webring from '../components/Webring';
 import { GitHubActivity } from '../components/GitHubActivity';
-import { ScrollProgress } from '../components/home/ScrollProgress';
 import { Hero } from '../components/home/Hero';
 import { Experience } from '../components/home/Experience';
 import { Education } from '../components/home/Education';
@@ -13,10 +12,10 @@ import { FeaturedProjects } from '../components/home/FeaturedProjects';
 export default function Home() {
     return (
         <div className="w-full homepage-text-reveal">
-            <ScrollProgress />
             <Hero />
             <Experience />
             <Education />
+            <FeaturedProjects />
             <Skills />
 
             {/* GitHub Activity */}
@@ -29,8 +28,6 @@ export default function Home() {
             >
                 <GitHubActivity username="kaificial" />
             </motion.section>
-
-            <FeaturedProjects />
 
             {/* Blank Footer Space */}
             <div style={{ height: '12px' }} />
