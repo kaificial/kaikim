@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 
 export default function InteractiveGrid() {
-    const bgGridRef = useRef<HTMLDivElement>(null);
     const rippleLayerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -28,7 +27,6 @@ export default function InteractiveGrid() {
 
     return (
         <>
-            <div ref={bgGridRef} className="bg-grid" aria-hidden="true" />
             <div ref={rippleLayerRef} className="cursor-ripple-layer" aria-hidden="true" />
         </>
     );

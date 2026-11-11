@@ -9,7 +9,7 @@ import { sfx } from "../../lib/sfx";
 import type { MediaEntry, MediaKind } from "../../data/media";
 import { Shelf } from "../../components/shelf/Shelf";
 import styles from "./notes.module.scss";
-import { DURATION, EASE_OUT, exitFor, HOVER_CARD, PRESS } from '../../styles/motion';
+import { DURATION, EASE_OUT, exitFor, HOVER_CARD, POP, PRESS } from '../../styles/motion';
 
 type Category = 'all' | MediaKind;
 type ViewMode = 'shelf' | 'list' | 'grid';
@@ -424,6 +424,77 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
     );
 };
 
+const PEEK_W = 420; // max width. the image is 840px so it's still sharp on retina
+const PEEK_RATIO = 115 / 840;
+
+/**
+ * letterboxd link that pops up a preview of my profile, like "movies" and "shows" on the home
+ * page. hover on desktop. on phones the first tap shows it and the second opens the link.
+ * it moves itself so it never goes off screen
+ */
+const LetterboxdLink = ({ href, color }: { href: string; color: string }) => {
+    const ref = useRef<HTMLAnchorElement>(null);
+    const lastPointer = useRef('mouse');
+    const [peek, setPeek] = useState<{ left: number; width: number; originX: number } | null>(null);
+
+    const open = () => {
+        const el = ref.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const vw = document.documentElement.clientWidth;
+        const width = Math.min(PEEK_W, vw - 32);
+        const mid = r.left + r.width / 2;
+        const x = Math.min(Math.max(mid - width / 2, 16), vw - 16 - width);
+        setPeek({ left: x - r.left, width, originX: mid - x });
+    };
+
+    useEffect(() => {
+        if (!peek) return;
+        // on phones, tapping somewhere else or scrolling closes it
+        const close = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setPeek(null); };
+        window.addEventListener('pointerdown', close, { passive: true });
+        window.addEventListener('scroll', close, { passive: true });
+        return () => {
+            window.removeEventListener('pointerdown', close);
+            window.removeEventListener('scroll', close);
+        };
+    }, [peek]);
+
+    return (
+        <a
+            ref={ref}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative inline-block"
+            style={{ color, textDecoration: 'underline', textUnderlineOffset: '3px' }}
+            onPointerDown={(e) => { lastPointer.current = e.pointerType; }}
+            onPointerEnter={(e) => { if (e.pointerType === 'mouse') open(); }}
+            onPointerLeave={(e) => { if (e.pointerType === 'mouse') setPeek(null); }}
+            onClick={(e) => {
+                if (lastPointer.current === 'mouse' || peek) return;
+                e.preventDefault();
+                sfx.pop({ x: e.clientX });
+                open();
+            }}
+        >
+            Letterboxd ↗
+            <AnimatePresence>
+                {peek && (
+                    <motion.span
+                        {...POP}
+                        aria-hidden="true"
+                        className="absolute bottom-full mb-3 z-50 pointer-events-none block rounded-[16px] overflow-hidden shadow-2xl border border-black/10 dark:border-white/10 bg-[#14181c]"
+                        style={{ left: peek.left, width: peek.width, height: peek.width * PEEK_RATIO, transformOrigin: `${peek.originX}px 100%` }}
+                    >
+                        <Image src="/assets/letterboxd.webp" alt="" fill sizes={`${PEEK_W}px`} style={{ objectFit: 'cover' }} />
+                    </motion.span>
+                )}
+            </AnimatePresence>
+        </a>
+    );
+};
+
 export default function NotesClient({ media, letterboxdProfile }: { media: MediaEntry[]; letterboxdProfile: string }) {
     const { isDark } = useTheme();
 
@@ -446,14 +517,7 @@ export default function NotesClient({ media, letterboxdProfile }: { media: Media
                     transition={{ delay: 1.35, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
                 >
                     Thoughts and ratings on films and shows.{' '}
-                    <a
-                        href={letterboxdProfile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: isDark ? '#8f8f8f' : '#6b7280', textDecoration: 'underline', textUnderlineOffset: '3px' }}
-                    >
-                        Letterboxd ↗
-                    </a>
+                    <LetterboxdLink href={letterboxdProfile} color={isDark ? '#8f8f8f' : '#6b7280'} />
                 </motion.p>
             </header>
 

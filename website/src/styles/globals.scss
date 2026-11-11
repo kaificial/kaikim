@@ -71,6 +71,41 @@ html.theme-switching *::after {
     transition: none !important;
 }
 
+// the theme wave (the image and the --vt-* values come from lib/themeTransition.ts).
+// the dark page shows through the mask, which jumps down one frame at a time. 28 steps
+// because there are 28 frames. going light, the dark page sits on top and it plays backwards
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+html.theme-to-light::view-transition-old(root) {
+    z-index: 1;
+}
+
+html.theme-to-dark::view-transition-new(root),
+html.theme-to-light::view-transition-old(root) {
+    -webkit-mask-image: var(--vt-mask);
+    mask-image: var(--vt-mask);
+    -webkit-mask-size: var(--vt-size);
+    mask-size: var(--vt-size);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    // keeps the squares crisp instead of blurry
+    image-rendering: pixelated;
+    animation: theme-wave var(--vt-ms) steps(28, jump-none) both;
+}
+
+html.theme-to-light::view-transition-old(root) {
+    animation-direction: reverse;
+}
+
+@keyframes theme-wave {
+    from { -webkit-mask-position: var(--vt-x) 0; mask-position: var(--vt-x) 0; }
+    to { -webkit-mask-position: var(--vt-x) var(--vt-end); mask-position: var(--vt-x) var(--vt-end); }
+}
+
 // dark mode colours: "graphite". neutral blacks and greys, no tint: a near-black
 // page, surfaces a step lighter each layer, thin borders, soft off-white text.
 // keep the --c-* values in sync with src/styles/palette.ts
@@ -94,14 +129,6 @@ html.theme-switching *::after {
     --c-tag-bg: rgba(52, 52, 52, 0.55);
     --c-tag-fg: #c8c8c8;
     --c-link: #3b82f6;
-}
-
-// a faint light from the top of the page, and darker black at the edges
-.dark body {
-    background-image:
-        radial-gradient(ellipse 1500px 760px at 50% -260px, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.0225) 40%, rgba(255, 255, 255, 0.006) 65%, transparent 85%),
-        radial-gradient(ellipse at 50% 120%, rgba(0, 0, 0, 0.6), transparent 60%);
-    background-attachment: fixed;
 }
 
 .dark ::selection {
@@ -246,7 +273,7 @@ main {
     max-width: 700px;
     margin: 0 auto;
     padding: 2.0rem 0; // 24px
-    padding-bottom: 60px; // space for floating dock on iphone
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)); // room for the dock so it doesn't cover the bottom
 
     @media (min-width: 768px) {
         padding-bottom: 0;
@@ -901,45 +928,42 @@ pre {
 
 // floating dock mobile
 .floating-dock {
+    // on phones the dock is a set width and the 10 buttons split it evenly, so it never runs
+    // off the edge on small screens. it also sits above the iphone home bar
     @media (max-width: 559px) {
+        width: min(calc(100vw - 24px), 400px);
         padding: 4px !important;
-        gap: 2px !important;
-        bottom: 16px !important;
-        border-radius: 10px !important;
-        max-width: calc(100vw - 16px);
+        gap: 0 !important;
+        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+        border-radius: 12px !important;
 
-        // smaller icon container sizes on mobile
-        button,
-        a {
-            width: 34px !important;
-            height: 34px !important;
+        // treat the social links like normal dock buttons so the spacing matches
+        .dock-group {
+            display: contents !important; // needs !important to beat the inline style
         }
 
-        // scale down SVG icons
+        > *,
+        .dock-group > * {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        button,
+        a {
+            width: 100% !important;
+            height: 38px !important;
+        }
+
         svg {
-            width: 17px !important;
-            height: 17px !important;
+            width: 18px !important;
+            height: 18px !important;
         }
     }
 
-    // most phones (10 dock slots incl. the sound toggle have to fit in 100vw - 16px)
-    @media (max-width: 400px) {
+    @media (max-width: 340px) {
         button,
         a {
-            width: 32px !important;
-            height: 32px !important;
-        }
-    }
-
-    // extra small phones: shrink so nothing spills off the bar
-    @media (max-width: 360px) {
-        gap: 1px !important;
-        padding: 3px !important;
-
-        button,
-        a {
-            width: 30px !important;
-            height: 30px !important;
+            height: 34px !important;
         }
 
         svg {
@@ -1067,8 +1091,6 @@ pre {
     }
 }
 
-/* Background grid — the actual page grid, gets 3D tilt on cursor move */
-.bg-grid,
 .cursor-bloom,
 .cursor-ripple-layer {
     position: fixed;
@@ -1076,24 +1098,6 @@ pre {
     pointer-events: none;
     z-index: -1;
     contain: strict;
-}
-
-.bg-grid {
-    transform-origin: center center;
-    will-change: transform;
-    background-image:
-        repeating-linear-gradient(90deg,
-            var(--grid-color) 0px,
-            var(--grid-color) 1px,
-            transparent 1px,
-            transparent var(--grid-size)),
-        repeating-linear-gradient(0deg,
-            var(--grid-color) 0px,
-            var(--grid-color) 1px,
-            transparent 1px,
-            transparent var(--grid-size));
-    background-size: var(--grid-size) var(--grid-size);
-    background-position: center top;
 }
 
 .cursor-bloom {
@@ -1133,7 +1137,6 @@ body.cursor-grid-active .cursor-bloom {
 
 @media (pointer: coarse) {
 
-    .bg-grid,
     .cursor-bloom,
     .cursor-ripple-layer {
         display: none;

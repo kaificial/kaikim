@@ -1,66 +1,50 @@
 "use client";
 
-import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import React from 'react';
-import { HOVER_CARD, SPRING } from '../styles/motion';
+import { SPRING } from '../styles/motion';
 
 interface SpotlightCardProps {
     children: React.ReactNode;
     isDark: boolean;
     noPadding?: boolean;
-    /** The blue cursor-tracking glow. Off for cards that carry their own media. */
-    spotlight?: boolean;
 }
 
-export const SpotlightCard = ({ children, isDark, noPadding = false, spotlight = true }: SpotlightCardProps) => {
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    // Hook has to run unconditionally, so build the gradient either way.
-    const glow = useMotionTemplate`
-        radial-gradient(
-            350px circle at ${mouseX}px ${mouseY}px,
-            rgba(37, 99, 235, 0.15),
-            transparent 80%
-        )
-    `;
-
-    function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
-        const { left, top } = currentTarget.getBoundingClientRect();
-        mouseX.set(clientX - left);
-        mouseY.set(clientY - top);
-    }
-
-    return (
-        <motion.div
-            onMouseMove={handleMouseMove}
-            className="group relative"
-            // lift only: scaling a card blurs its text and video, and a slow hover feels laggy
-            whileHover={{ ...HOVER_CARD, transition: SPRING }}
-            style={{
-                border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
-                borderRadius: '8px',
-                padding: noPadding ? '0' : '16px',
-                backgroundColor: isDark ? '#141414' : 'white',
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: isDark
-                    ? '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)'
-                    : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column'
-            }}
-        >
-            {spotlight && (
-                <motion.div
-                    className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100"
-                    style={{ background: glow, transition: 'opacity 0.3s' }}
-                />
-            )}
-            <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {children}
-            </div>
-        </motion.div>
-    );
+// normal and hover shadows. both have two layers so framer can animate between them
+const SHADOW = {
+    dark: ['0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)', '0 14px 24px -8px rgba(0, 0, 0, 0.7), 0 4px 8px -2px rgba(0, 0, 0, 0.4)'],
+    light: ['0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', '0 18px 30px -8px rgba(0, 0, 0, 0.16), 0 6px 10px -4px rgba(0, 0, 0, 0.08)'],
 };
+
+export const SpotlightCard = ({ children, isDark, noPadding = false }: SpotlightCardProps) => (
+    <motion.div
+        className="group relative"
+        // on hover it lifts a bit, the shadow gets deeper and the border gets darker. no scaling,
+        // that makes the text and video blurry. the normal look is in style (not animate) so a
+        // theme switch changes it instantly, otherwise the theme wave catches it halfway
+        whileHover={{
+            y: -4,
+            boxShadow: SHADOW[isDark ? 'dark' : 'light'][1],
+            borderColor: isDark ? '#3a3a3a' : '#d1d5db',
+        }}
+        transition={SPRING}
+        style={{
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: isDark ? '#2a2a2a' : '#e5e7eb',
+            boxShadow: SHADOW[isDark ? 'dark' : 'light'][0],
+            borderRadius: '8px',
+            padding: noPadding ? '0' : '16px',
+            backgroundColor: isDark ? '#141414' : 'white',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+        }}
+    >
+        <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
+            {children}
+        </div>
+    </motion.div>
+);
