@@ -3,7 +3,9 @@
 My personal website: experience, projects, and notes on the films and shows I watch.
 built with next.js, with a lot of small details in motion and sound design.
 
-live at [kaificial.vercel.app](https://kaikim.ca)
+https://github.com/user-attachments/assets/f300df11-bd06-4c44-872d-ef85536c2a6b
+
+live at [kaikim.ca](https://kaikim.ca)
 
 ## Running it locally
 
