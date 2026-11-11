@@ -39,7 +39,7 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
         : '0 0 20px rgba(37, 99, 235, 0.4), 0 0 40px rgba(37, 99, 235, 0.18)';
 
     return (
-        <SpotlightCard isDark={isDark} noPadding spotlight={false}>
+        <SpotlightCard isDark={isDark} noPadding>
             {/* preview reel goes full width so the demo ui is readable */}
             <div style={{
                 position: 'relative',

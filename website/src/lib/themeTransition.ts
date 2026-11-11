@@ -1,143 +1,197 @@
 "use client";
 
 /**
- * "the grid turns over": switching theme swaps the page tile by tile across the site's 24px grid,
- * in a wave that spreads from where you clicked. tiles grow from the middle with a bit of random
- * lag so the edge looks pixelated.
+ * theme switch: the page flips over in little 24px squares, spreading out from wherever
+ * you clicked. each square grows from its middle and some start a bit late, so the edge
+ * looks pixelated instead of smooth.
  *
- * uses the view transitions api: the old and new page are real snapshots, and the new one shows
- * through a mask. every frame of the wave is drawn up front into one tall sprite, then a plain css
- * steps() animation flips through it, so nothing runs in js mid-transition (mobile browsers don't
- * reliably pick up style changes on the transition while it's playing). no api or reduced motion =
- * instant switch
+ * it uses view transitions, so the browser gives us a picture of the old page and the new
+ * one, and we reveal one through a mask. i draw every frame of the wave into one tall image
+ * up front and let css step through it, so no js runs while it's playing.
+ *
+ * the old version drew that image on a canvas and saved it as a png, which was slow on
+ * phones. now i just write the pixels into a buffer myself and wrap it as a png with no
+ * compression, which takes a few ms.
+ * if the browser can't do view transitions (or you have reduced motion on) it just swaps
  */
 
 const CELL = 24; // matches --grid-size
-const FRAMES = 28; // frames in the sprite
+const FRAMES = 28; // if you change this, change steps(28) in globals.scss too
 const RAMP = 0.18; // how much of the run each tile takes to grow
 const JITTER = 0.12; // random lag per tile, as a fraction of the run
-const MAX_SPRITE_PX = 3_000_000; // small enough to build fast, well under safari's canvas limit
+const MAX_PIXELS = 3_000_000; // keeps the image around 12MB once the browser decodes it
+const MAX_HEIGHT = 16_000; // gpus don't like images taller than this
 export const THEME_WAVE_MS = 1100;
 
 let lastPointer: { x: number; y: number; t: number } | null = null;
-let listening = false;
-const rememberPointer = () => {
-    if (listening || typeof window === 'undefined') return;
-    listening = true;
+if (typeof window !== 'undefined') {
     window.addEventListener('pointerdown', (e) => { lastPointer = { x: e.clientX, y: e.clientY, t: performance.now() }; }, { capture: true, passive: true });
+}
+
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+
+/* ── a tiny png writer. black = see-through, white = solid, so it works as a mask ── */
+
+let crcTable: Uint32Array | null = null;
+const crc32 = (buf: Uint8Array, start: number, end: number) => {
+    if (!crcTable) {
+        crcTable = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+            let c = n;
+            for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+            crcTable[n] = c >>> 0;
+        }
+    }
+    let c = 0xffffffff;
+    for (let i = start; i < end; i++) c = crcTable[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
 };
-rememberPointer();
 
-/** where the wave starts: the tap/click that caused it, or top centre for keyboard/⌘K */
-const originPoint = () => {
-    if (lastPointer && performance.now() - lastPointer.t < 1000) return { x: lastPointer.x, y: lastPointer.y };
-    return { x: window.innerWidth / 2, y: 0 };
+const adler32 = (buf: Uint8Array) => {
+    let a = 1, b = 0;
+    for (let i = 0; i < buf.length;) {
+        const end = Math.min(i + 5552, buf.length);
+        for (; i < end; i++) { a += buf[i]; b += a; }
+        a %= 65521; b %= 65521;
+    }
+    return ((b << 16) | a) >>> 0;
 };
 
-const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+/** raw is the image rows, each starting with a 0 byte. nothing gets compressed, it's just wrapped */
+const encodeMaskPng = (raw: Uint8Array, width: number, height: number) => {
+    const idatLen = 2 + raw.length + Math.ceil(raw.length / 65535) * 5 + 4;
+    const out = new Uint8Array(8 + 25 + 14 + 12 + idatLen + 12);
+    const dv = new DataView(out.buffer);
+    out.set([137, 80, 78, 71, 13, 10, 26, 10]);
+    let p = 8;
+    const chunk = (type: string, len: number, fill: () => void) => {
+        dv.setUint32(p, len); p += 4;
+        const start = p;
+        for (let i = 0; i < 4; i++) out[p++] = type.charCodeAt(i);
+        fill();
+        dv.setUint32(p, crc32(out, start, p)); p += 4;
+    };
+    chunk('IHDR', 13, () => { dv.setUint32(p, width); dv.setUint32(p + 4, height); out.set([1, 0, 0, 0, 0], p + 8); p += 13; });
+    chunk('tRNS', 2, () => { dv.setUint16(p, 0); p += 2; });
+    chunk('IDAT', idatLen, () => {
+        out[p++] = 0x78; out[p++] = 0x01;
+        for (let off = 0; off < raw.length; off += 65535) {
+            const len = Math.min(65535, raw.length - off);
+            out[p++] = off + len >= raw.length ? 1 : 0;
+            dv.setUint16(p, len, true); dv.setUint16(p + 2, ~len & 0xffff, true); p += 4;
+            out.set(raw.subarray(off, off + len), p); p += len;
+        }
+        dv.setUint32(p, adler32(raw)); p += 4;
+    });
+    chunk('IEND', 0, () => {});
+    return new Blob([out], { type: 'image/png' });
+};
 
-type ViewTransitionLike = { ready: Promise<void>; finished: Promise<void> };
+/* ── the wave ── */
+
+/** draws every frame of the wave, stacked top to bottom */
+const buildWave = (w: number, h: number, ox: number, oy: number) => {
+    // the squares are centred across the page like the old background grid was, so start one
+    // square early to cover the cut-off column on the left
+    const shift = (((w - CELL) / 2) % CELL + CELL) % CELL;
+    const left = shift > 0 ? shift - CELL : 0;
+    const cols = Math.ceil((w - left) / CELL);
+    const rows = Math.ceil(h / CELL);
+
+    // how many image pixels per square. has to be even so squares grow evenly from the middle,
+    // and divide into 24 so it scales up cleanly. bigger is sharper, smaller is lighter
+    let px = 8;
+    while (px > 2 && (cols * rows * px * px * FRAMES > MAX_PIXELS || rows * px * FRAMES > MAX_HEIGHT)) px -= 2;
+
+    // when each square starts: further from the click = later, plus a bit of randomness
+    const n = cols * rows;
+    const starts = new Float32Array(n);
+    let far = 1;
+    for (let i = 0; i < n; i++) {
+        const d = Math.hypot(left + ((i % cols) + 0.5) * CELL - ox, (((i / cols) | 0) + 0.5) * CELL - oy);
+        starts[i] = d;
+        if (d > far) far = d;
+    }
+    for (let i = 0; i < n; i++) starts[i] = (starts[i] / far) * (1 - RAMP - JITTER) + Math.random() * JITTER;
+
+    const width = cols * px;
+    const frameH = rows * px;
+    const stride = 1 + ((width + 7) >> 3);
+    const raw = new Uint8Array(stride * frameH * FRAMES);
+    const sizes = new Uint8Array(cols);
+    const half = px / 2;
+
+    for (let f = 0; f < FRAMES; f++) {
+        const progress = f / (FRAMES - 1);
+        for (let r = 0; r < rows; r++) {
+            let any = false;
+            for (let c = 0; c < cols; c++) {
+                const t = (progress - starts[r * cols + c]) / RAMP;
+                const s = t <= 0 ? 0 : t >= 1 ? px : 2 * Math.max(1, Math.ceil(half * easeOut(t)));
+                sizes[c] = s;
+                if (s) any = true;
+            }
+            if (!any) continue;
+            const y0 = f * frameH + r * px;
+            for (let c = 0; c < cols; c++) {
+                const s = sizes[c];
+                if (!s) continue;
+                const off = (px - s) >> 1;
+                const x0 = c * px + off;
+                for (let y = y0 + off; y < y0 + off + s; y++) {
+                    const row = y * stride + 1;
+                    for (let x = x0; x < x0 + s; x++) raw[row + (x >> 3)] |= 0x80 >> (x & 7);
+                }
+            }
+        }
+    }
+
+    return { blob: encodeMaskPng(raw, width, frameH * FRAMES), left, cols, rows };
+};
+
+type ViewTransitionLike = { finished: Promise<void> };
 type DocWithVT = Document & { startViewTransition?: (cb: () => void) => ViewTransitionLike };
 
 /**
- * run `apply` (has to update the dom right away) as a tile wave. the dark page is always the one
- * that moves: going dark it grows out of the button, going light it shrinks back into it.
- * returns how long the wave runs (0 if it switched instantly)
+ * runs `apply` (which has to change the page straight away) behind the wave. the dark page is
+ * always the one moving: it grows out of your click going dark, and shrinks back going light.
+ * returns how long the wave lasts, or 0 if it just switched
  */
 export const runThemeTransition = (apply: () => void, toDark: boolean): number => {
     const doc = document as DocWithVT;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!doc.startViewTransition || reduce) {
+    if (!doc.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         apply();
         return 0;
     }
 
-    // on phones the snapshot is the full screen height, taller than innerHeight while the url bar
-    // shows, so cover a bit extra or the strip behind the url bar pops at the end
-    const w = window.innerWidth;
-    const h = Math.max(window.innerHeight, document.documentElement.clientHeight) + 160;
-    const cols = Math.ceil(w / CELL);
-    const rows = Math.ceil(h / CELL);
-    // pixels per tile in the sprite: as sharp as the size limit allows
-    const px = Math.max(2, Math.min(12, Math.floor(Math.sqrt(MAX_SPRITE_PX / (cols * rows * FRAMES)))));
+    const root = document.documentElement;
+    // width without the scrollbar. on phones the page is taller than the screen while the url
+    // bar is showing, so cover a little extra
+    const w = root.clientWidth;
+    const h = Math.max(window.innerHeight, root.clientHeight) + 160;
+    // start from the click, or from the top middle if it came from the keyboard / ⌘K
+    const recent = lastPointer && performance.now() - lastPointer.t < 1000;
+    const { blob, left, cols, rows } = buildWave(w, h, recent ? lastPointer!.x : w / 2, recent ? lastPointer!.y : 0);
+    const url = URL.createObjectURL(blob);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = cols * px;
-    canvas.height = rows * px * FRAMES;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { apply(); return 0; }
-
-    // each tile's start time: distance from the tap plus a little noise
-    const o = originPoint();
-    const far = Math.max(Math.hypot(o.x, o.y), Math.hypot(w - o.x, o.y), Math.hypot(o.x, h - o.y), Math.hypot(w - o.x, h - o.y));
-    const starts = new Float32Array(cols * rows);
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            const d = Math.hypot((c + 0.5) * CELL - o.x, (r + 0.5) * CELL - o.y) / far;
-            starts[r * cols + c] = d * (1 - RAMP - JITTER) + Math.random() * JITTER;
-        }
-    }
-
-    // draw every frame of the wave, stacked top to bottom
-    ctx.fillStyle = '#000';
-    const frameH = rows * px;
-    for (let f = 0; f < FRAMES; f++) {
-        const progress = f / (FRAMES - 1);
-        const top = f * frameH;
-        for (let i = 0; i < starts.length; i++) {
-            const p = (progress - starts[i]) / RAMP;
-            if (p <= 0) continue;
-            const s = p >= 1 ? px : Math.max(1, Math.round(px * easeOut(p)));
-            const off = (px - s) / 2;
-            ctx.fillRect((i % cols) * px + off, top + ((i / cols) | 0) * px + off, s, s);
-        }
-    }
-
-    let url: string;
-    try { url = canvas.toDataURL(); } catch { apply(); return 0; }
-
-    // the sprite is shown one frame per screen. steps(FRAMES, jump-none) lands on exactly FRAMES
-    // positions, first to last, so every step is one whole frame (FRAMES - 1 here drifts off frame).
-    // going dark: the new (dark) page shows through the growing tiles.
-    // going light: the old (dark) page sits on top and the same wave plays backwards,
-    // so the dark tiles pull back in toward the button
-    const screenW = cols * CELL;
-    const screenH = rows * CELL;
-    const lastY = -(FRAMES - 1) * screenH;
-    const moving = toDark ? 'new' : 'old';
-    const still = toDark ? 'old' : 'new';
-    const style = document.createElement('style');
-    style.textContent = `
-        ::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
-        ::view-transition-${still}(root) { animation: none; }
-        ::view-transition-old(root) { z-index: ${toDark ? 0 : 1}; }
-        ::view-transition-${moving}(root) {
-            -webkit-mask-image: url(${url});
-            mask-image: url(${url});
-            -webkit-mask-size: ${screenW}px ${screenH * FRAMES}px;
-            mask-size: ${screenW}px ${screenH * FRAMES}px;
-            -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
-            -webkit-mask-position: 0 0;
-            mask-position: 0 0;
-            animation: theme-wave ${THEME_WAVE_MS}ms steps(${FRAMES}, jump-none) both ${toDark ? 'normal' : 'reverse'};
-        }
-        @keyframes theme-wave {
-            from { -webkit-mask-position: 0 0; mask-position: 0 0; }
-            to { -webkit-mask-position: 0 ${lastY}px; mask-position: 0 ${lastY}px; }
-        }
-    `;
-    document.head.appendChild(style);
-    // otherwise colour transitions get caught mid-fade in the new snapshot
-    document.documentElement.classList.add('theme-switching');
+    const vars: Record<string, string> = {
+        '--vt-mask': `url("${url}")`,
+        '--vt-x': `${left}px`,
+        '--vt-size': `${cols * CELL}px ${rows * CELL * FRAMES}px`,
+        '--vt-end': `${-(FRAMES - 1) * rows * CELL}px`,
+        '--vt-ms': `${THEME_WAVE_MS}ms`,
+    };
+    for (const k in vars) root.style.setProperty(k, vars[k]);
+    // this class also turns off colour fades, otherwise the new page gets captured mid-fade
+    root.classList.add('theme-switching', toDark ? 'theme-to-dark' : 'theme-to-light');
 
     const cleanup = () => {
-        style.remove();
-        document.documentElement.classList.remove('theme-switching');
+        root.classList.remove('theme-switching', 'theme-to-dark', 'theme-to-light');
+        root.style.removeProperty('--vt-mask');
+        URL.revokeObjectURL(url);
     };
     try {
-        const transition = doc.startViewTransition(apply);
-        transition.finished.then(cleanup, cleanup);
+        doc.startViewTransition(apply).finished.then(cleanup, cleanup);
     } catch {
         cleanup();
         apply();
