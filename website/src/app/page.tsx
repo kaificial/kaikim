@@ -12,13 +12,14 @@ export default function Home() {
     return (
         <div className="w-full homepage-text-reveal">
             <Hero />
-            <Experience />
-            <Education />
-            <FeaturedProjects />
-            <Skills />
+            {/* sections the command palette can jump to */}
+            <div data-page-section="Experience"><Experience /></div>
+            <div data-page-section="Education"><Education /></div>
+            <div data-page-section="Projects"><FeaturedProjects /></div>
+            <div data-page-section="Skills"><Skills /></div>
 
             {/* GitHub Activity */}
-            <section style={{ marginTop: '32px' }}>
+            <section style={{ marginTop: '32px' }} data-page-section="Activity">
                 <div data-scroll-fx>
                     <GitHubActivity username="kaificial" />
                 </div>
@@ -26,7 +27,7 @@ export default function Home() {
 
             {/* Blank Footer Space */}
             <div style={{ height: '12px' }} />
-            <Webring />
+            <div data-page-section="Webring"><Webring /></div>
             <div className="footer-spacer" />
         </div>
     );

@@ -181,6 +181,8 @@ export const playlist: PlaylistSong[] = [
     { title: "Cross Your Mind", artist: "Shelly" },
 
 
+    { title: "ETA", artist: "NewJeans" },
+    { title: "Cool With You", artist: "NewJeans" },
     { title: "Get Up", artist: "NewJeans" },
 
 ];

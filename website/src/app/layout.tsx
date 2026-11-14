@@ -10,7 +10,6 @@ import { AudioProvider } from "../components/AudioContext";
 import ScrollToTop from "../components/ScrollToTop";
 import SmoothScroll from "../components/SmoothScroll";
 import InteractiveGrid from "../components/InteractiveGrid";
-import CommandPalette from "../components/CommandPalette";
 import FloatingDock from "../components/FloatingDock";
 import SiteFooter from "../components/SiteFooter";
 import CustomCursor from "../components/CustomCursor";
@@ -174,7 +173,6 @@ export default function RootLayout({
                             {children}
                         </main>
                         <SiteFooter />
-                        <CommandPalette />
                         <FloatingDock />
                         <CustomCursor />
                         <SfxBoot />

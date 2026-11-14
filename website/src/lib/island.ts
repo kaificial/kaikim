@@ -8,7 +8,8 @@ import { useSyncExternalStore } from 'react';
  */
 export type IslandActivity =
     | { kind: 'theme'; dark: boolean }
-    | { kind: 'commit'; type: 'push' | 'pr' | 'merge'; repo: string; message?: string; at: string };
+    | { kind: 'commit'; type: 'push' | 'pr' | 'merge'; repo: string; message?: string; at: string }
+    | { kind: 'notice'; text: string; tone?: 'success' | 'error' };
 
 type Current = (IslandActivity & { key: number }) | null;
 

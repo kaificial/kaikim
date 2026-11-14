@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } fr
 import Link from "next/link";
 import { motion, AnimatePresence, useScroll, useTransform, useMotionTemplate } from "framer-motion";
 import { createPortal } from "react-dom";
-import { Play, Pause, SkipBack, SkipForward, Sun, Moon, Github, GitCommitHorizontal, GitPullRequest, GitMerge } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Sun, Moon, Github, GitCommitHorizontal, GitPullRequest, GitMerge, Check, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeContext";
 import { useAudio } from "./AudioContext";
@@ -12,6 +12,7 @@ import { useUISound } from "../hooks/use-ui-sound";
 import { sfx } from "../lib/sfx";
 import { EASE_OUT, HOVER_PILL, mouseOnly, PRESS, TOOLTIP } from '../styles/motion';
 import { useIslandActivity } from '../lib/island';
+import { CommandPalettePanel, isPaletteShortcut, OPEN_PALETTE_EVENT, paletteSize } from './CommandPalette';
 import { timeAgo, useLastCommitActivity } from '../hooks/use-last-commit';
 
 // 7 × 6 pixel heart. "#" = outline, "o" = fill (only once liked), "*" = highlight
@@ -51,6 +52,14 @@ const navLinks = [
 ];
 
 const ISLAND_SPRING = { type: "spring", stiffness: 280, damping: 30 } as const;
+/*
+ * open and close animations. opening bounces a little, closing is quicker and calmer.
+ * the contents fade on short tweens since a bouncy fade just looks like flicker
+ */
+const ISLAND_OPEN = { type: "spring", visualDuration: 0.42, bounce: 0.18 } as const;
+const ISLAND_CLOSE = { type: "spring", visualDuration: 0.32, bounce: 0.04 } as const;
+const FADE_IN = { duration: 0.22, delay: 0.06, ease: EASE_OUT } as const;
+const FADE_OUT = { duration: 0.12, ease: EASE_OUT } as const;
 /** how far the floating island sits from the top of the screen */
 const FLOAT_TOP = 12;
 
@@ -83,7 +92,7 @@ const Marquee = ({ label }: { label: string }) => {
 
 const MusicWidget = () => {
     const { isDark } = useTheme();
-    const { currentTrack, isPlaying, progress, duration, togglePlay: globalTogglePlay, seek, shuffleTrack } = useAudio();
+    const { currentTrack, isPlaying, progress, duration, togglePlay: globalTogglePlay, seek, shuffleTrack, previousTrack } = useAudio();
     const { playClick } = useUISound();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isWidgetHovered, setIsWidgetHovered] = useState(false);
@@ -101,6 +110,9 @@ const MusicWidget = () => {
     const [floatInstant, setFloatInstant] = useState(false);
     const activity = useIslandActivity();
     useLastCommitActivity();
+    // what the widget expands into
+    const [mode, setMode] = useState<'music' | 'palette'>('music');
+    const [winH, setWinH] = useState(0);
     // reading progress: a ring round the album art that fills as you scroll the page
     const { scrollYProgress } = useScroll();
     const readPct = useTransform(scrollYProgress, [0, 1], [0, 100]);
@@ -115,7 +127,7 @@ const MusicWidget = () => {
     }, []);
 
     useEffect(() => {
-        const update = () => setWinW(window.innerWidth);
+        const update = () => { setWinW(window.innerWidth); setWinH(window.innerHeight); };
         update();
         window.addEventListener('resize', update);
         return () => window.removeEventListener('resize', update);
@@ -129,6 +141,7 @@ const MusicWidget = () => {
             if (insideSlot || insideExpanded) return;
 
             if (isExpanded) {
+                if (mode === 'palette') sfx.close();
                 if (docked) {
                     const r = slotRef.current?.getBoundingClientRect();
                     if (r) setSlotRect({ top: r.top, left: r.left });
@@ -144,7 +157,7 @@ const MusicWidget = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isExpanded, docked]);
+    }, [isExpanded, docked, mode]);
 
     const togglePlay = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -197,16 +210,28 @@ const MusicWidget = () => {
         borderColor,
         boxShadow: '0 0px 0px rgba(0,0,0,0), 0 0px 0px rgba(0,0,0,0)',
     };
-    const expandedGeom = {
-        top: 12,
-        left: Math.max(8, (winW - 340) / 2),
-        width: 340,
-        height: 200,
-        borderRadius: 36,
-        backgroundColor: bg,
-        borderColor,
-        boxShadow: expandedShadow,
-    };
+    const palette = paletteSize(winW, winH);
+    const expandedGeom = mode === 'palette'
+        ? {
+            top: 12,
+            left: palette.left,
+            width: palette.width,
+            height: palette.height,
+            borderRadius: 26,
+            backgroundColor: bg,
+            borderColor,
+            boxShadow: expandedShadow,
+        }
+        : {
+            top: 12,
+            left: Math.max(8, (winW - 340) / 2),
+            width: 340,
+            height: 200,
+            borderRadius: 36,
+            backgroundColor: bg,
+            borderColor,
+            boxShadow: expandedShadow,
+        };
 
     const slotAligned = (slotRect?.top ?? 0) >= 0;
     const scrolledExit = {
@@ -215,7 +240,7 @@ const MusicWidget = () => {
         opacity: { duration: 0.55, ease: [0.4, 0, 1, 1] },
     } as const;
     const boxExit = slotAligned
-        ? collapsedGeom
+        ? { ...collapsedGeom, transition: ISLAND_CLOSE }
         : {
             top: expandedGeom.top - 96,
             left: expandedGeom.left + (expandedGeom.width - collapsedGeom.width) / 2,
@@ -228,8 +253,12 @@ const MusicWidget = () => {
             opacity: 0,
             transition: scrolledExit,
         };
-    const compactExit = slotAligned ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1, transition: scrolledExit };
-    const fullExit = { opacity: 0, scale: 0.45, ...(!slotAligned && { transition: scrolledExit }) };
+    const compactExit = slotAligned
+        ? { opacity: 1, scale: 1, transition: { ...ISLAND_CLOSE, opacity: { ...FADE_IN, delay: 0.04 } } }
+        : { opacity: 0, scale: 1, transition: scrolledExit };
+    const fullExit = slotAligned
+        ? { opacity: 0, scale: 0.45, transition: { ...ISLAND_CLOSE, opacity: FADE_OUT } }
+        : { opacity: 0, scale: 0.45, transition: scrolledExit };
 
     const measureSlot = () => {
         if (!docked) {
@@ -240,13 +269,42 @@ const MusicWidget = () => {
         const r = slotRef.current?.getBoundingClientRect();
         if (r) setSlotRect({ top: r.top, left: r.left });
     };
-    const expand = () => { sfx.pop(); measureSlot(); setIslandPresent(true); setIsExpanded(true); };
+    const expand = () => { sfx.pop(); setMode('music'); measureSlot(); setIslandPresent(true); setIsExpanded(true); };
     const collapse = () => {
-        playClick();
+        if (mode === 'palette') sfx.close(); else playClick();
         measureSlot();
         setFloatInstant(!docked);
         requestAnimationFrame(() => setIsExpanded(false));
     };
+
+    // ⌘K turns the widget into the palette (even if the player is already open)
+    // refs hold the latest functions so the listener doesn't rebind every render
+    const toggleRef = useRef<() => void>(() => {});
+    const closeRef = useRef<() => void>(() => {});
+    useEffect(() => {
+        toggleRef.current = () => {
+            if (isExpanded && mode === 'palette') { collapse(); return; }
+            sfx.open();
+            setMode('palette');
+            if (!isExpanded) { measureSlot(); setIslandPresent(true); setIsExpanded(true); }
+        };
+        closeRef.current = () => { if (isExpanded && mode === 'palette') collapse(); };
+    });
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (!isPaletteShortcut(e)) return;
+            e.preventDefault();
+            toggleRef.current();
+        };
+        const onOpen = () => { if (!(isExpanded && mode === 'palette')) toggleRef.current(); };
+        window.addEventListener('keydown', onKey);
+        window.addEventListener(OPEN_PALETTE_EVENT, onOpen);
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            window.removeEventListener(OPEN_PALETTE_EVENT, onOpen);
+        };
+    }, [isExpanded, mode]);
+    const closePalette = useCallback(() => closeRef.current(), []);
 
     const waveBars = (small: boolean) => (
         [
@@ -333,6 +391,20 @@ const MusicWidget = () => {
             </motion.span>
             <span style={{ color: '#f5f5f5', fontSize: '0.72rem', fontWeight: 600 }}>{activity.dark ? 'Dark mode' : 'Light mode'}</span>
         </div>
+    ) : activity?.kind === 'notice' ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', height: '100%', paddingLeft: 3 }}>
+            <motion.span
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', duration: 0.4, bounce: 0.35 }}
+                style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: activity.tone === 'error' ? '#ef4444' : '#3b82f6' }}
+            >
+                {activity.tone === 'error'
+                    ? <X size={12} color="#fff" strokeWidth={3} />
+                    : <Check size={12} color="#fff" strokeWidth={3} />}
+            </motion.span>
+            <span style={{ flex: 1, minWidth: 0, color: '#f5f5f5', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activity.text}</span>
+        </div>
     ) : activity?.kind === 'commit' ? (
         <div style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%', paddingLeft: 6 }}>
             <Github size={15} color="#f5f5f5" style={{ flexShrink: 0 }} />
@@ -391,7 +463,7 @@ const MusicWidget = () => {
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={PRESS}
-                        onClick={(e) => { e.stopPropagation(); playClick(); seek(0); }}
+                        onClick={(e) => { e.stopPropagation(); playClick(); previousTrack(); }}
                         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: 40, height: 40, borderRadius: '50%' }}
                     >
                         <motion.div
@@ -479,15 +551,27 @@ const MusicWidget = () => {
             )}
 
             {islandPresent && createPortal(
-                <AnimatePresence onExitComplete={() => setIslandPresent(false)}>
+                <AnimatePresence onExitComplete={() => { setIslandPresent(false); setMode('music'); }}>
+                    {isExpanded && mode === 'palette' && (
+                        // dark overlay, clicking it closes the palette
+                        <motion.div
+                            key="palette-backdrop"
+                            className={`cmdk-backdrop ${isDark ? '' : 'is-light'}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.22, ease: EASE_OUT }}
+                        />
+                    )}
                     {isExpanded && (
                         <motion.div
+                            key="island"
                             ref={widgetRef}
-                            onClick={collapse}
+                            onClick={mode === 'music' ? collapse : undefined}
                             initial={collapsedGeom}
                             animate={expandedGeom}
                             exit={boxExit}
-                            transition={ISLAND_SPRING}
+                            transition={ISLAND_OPEN}
                             style={{
                                 position: 'fixed',
                                 boxSizing: 'border-box',
@@ -497,23 +581,23 @@ const MusicWidget = () => {
                                 borderStyle: 'solid',
                                 borderWidth: '1px',
                                 overflow: 'hidden',
-                                cursor: 'pointer',
+                                cursor: mode === 'music' ? 'pointer' : 'default',
                                 transformOrigin: 'top center',
-                                backdropFilter: 'blur(20px)',
-                                WebkitBackdropFilter: 'blur(20px)',
-                                zIndex: 1100,
+                                // sit above the dock when it's the palette
+                                zIndex: mode === 'palette' ? 4001 : 1100,
                             }}
                         >
                             <motion.div
                                 initial={{ opacity: 1, scale: 1 }}
                                 animate={{ opacity: isExpanded ? 0 : 1, scale: isExpanded ? 2.2 : 1 }}
                                 exit={compactExit}
-                                transition={ISLAND_SPRING}
+                                transition={{ ...ISLAND_OPEN, opacity: FADE_OUT }}
                                 style={{
                                     position: 'absolute', top: 0, left: 0,
                                     width: 150, height: 36, padding: '3px 12px 3px 3px',
                                     boxSizing: 'border-box', display: 'flex', alignItems: 'center',
                                     transformOrigin: 'top left',
+                                    willChange: 'transform, opacity',
                                     pointerEvents: isExpanded ? 'none' : 'auto',
                                 }}
                             >
@@ -523,16 +607,18 @@ const MusicWidget = () => {
                                 initial={{ opacity: 0, scale: 0.45 }}
                                 animate={{ opacity: isExpanded ? 1 : 0, scale: isExpanded ? 1 : 0.45 }}
                                 exit={fullExit}
-                                transition={ISLAND_SPRING}
+                                transition={{ ...ISLAND_OPEN, opacity: FADE_IN }}
                                 style={{
                                     position: 'absolute', top: 0, left: 0,
-                                    width: 340, height: 200, padding: '16px 20px',
+                                    width: expandedGeom.width, height: expandedGeom.height,
+                                    padding: mode === 'palette' ? 0 : '16px 20px',
                                     boxSizing: 'border-box', display: 'flex', flexDirection: 'column',
                                     transformOrigin: 'top left',
+                                    willChange: 'transform, opacity',
                                     pointerEvents: isExpanded ? 'auto' : 'none',
                                 }}
                             >
-                                {expandedContent}
+                                {mode === 'palette' ? <CommandPalettePanel onClose={closePalette} /> : expandedContent}
                             </motion.div>
                         </motion.div>
                     )}

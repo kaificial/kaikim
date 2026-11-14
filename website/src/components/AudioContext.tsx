@@ -20,7 +20,11 @@ interface AudioContextType {
     togglePlay: () => void;
     seek: (time: number) => void;
     shuffleTrack: () => Promise<void>;
+    previousTrack: () => void;
 }
+
+/** music volume, 0 to 1 */
+const MUSIC_VOLUME = 0.5;
 
 const DEFAULT_TRACK: Track = {
     id: "eta-newjeans",
@@ -30,45 +34,12 @@ const DEFAULT_TRACK: Track = {
     cover: "/assets/music.jpg",
 };
 
-async function fetchDefaultTrack(): Promise<Track | null> {
+async function fetchTrackFromAPI(title?: string, artist?: string): Promise<Track | null> {
     try {
-        const term = encodeURIComponent("NewJeans ETA");
-        const res = await fetch(
-            `https://itunes.apple.com/search?term=${term}&entity=song&limit=10`
-        );
-        if (!res.ok) return null;
-        const data = await res.json();
-        interface iTunesResult {
-            trackId: number;
-            trackName: string;
-            artistName: string;
-            previewUrl?: string;
-            artworkUrl100?: string;
-        }
-        const results: iTunesResult[] = data.results ?? [];
-        const hit = results.find(
-            (r) =>
-                r.previewUrl &&
-                r.trackName.toLowerCase().includes("eta") &&
-                r.artistName.toLowerCase().includes("newjeans")
-        );
-        if (!hit?.previewUrl) return null;
-        return {
-            id: String(hit.trackId),
-            title: "ETA",
-            artist: "NewJeans",
-            src: hit.previewUrl,
-            cover: DEFAULT_TRACK.cover,
-        };
-    } catch {
-        return null;
-    }
-}
-
-// Pull a random song from API route
-async function fetchRandomTrack(): Promise<Track | null> {
-    try {
-        const res = await fetch("/api/music");
+        const params = title && artist
+            ? `?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`
+            : '';
+        const res = await fetch(`/api/music${params}`);
         if (!res.ok) return null;
         const data = await res.json();
         if (!data?.src) return null;
@@ -84,14 +55,48 @@ async function fetchRandomTrack(): Promise<Track | null> {
     }
 }
 
+async function fetchDefaultTrack(): Promise<Track | null> {
+    return fetchTrackFromAPI("ETA", "NewJeans");
+}
+
+async function fetchSecondTrack(): Promise<Track | null> {
+    return fetchTrackFromAPI("Cool With You", "NewJeans");
+}
+
+// get a random song
+async function fetchRandomTrack(): Promise<Track | null> {
+    return fetchTrackFromAPI();
+}
+
+const isEta = (t: Track) =>
+    t.title.toLowerCase() === "eta" && t.artist.toLowerCase() === "newjeans";
+
+// after ETA comes Cool With You, otherwise shuffle
+async function fetchNextTrack(current: Track): Promise<Track | null> {
+    if (isEta(current)) {
+        const second = await fetchSecondTrack();
+        if (second) return second;
+    }
+    // don't repeat the same song
+    for (let i = 0; i < 3; i++) {
+        const t = await fetchRandomTrack();
+        if (!t || t.id !== current.id) return t;
+    }
+    return null;
+}
+
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const historyRef = useRef<Track[]>([]);
+    const currentTrackRef = useRef<Track>(DEFAULT_TRACK);
     const [currentTrack, setCurrentTrack] = useState<Track>(DEFAULT_TRACK);
     const [isPlaying, setIsPlaying] = useState(false);
     // sound effects drop 6 dB while music plays
     useEffect(() => { sfx.duck(isPlaying); }, [isPlaying]);
+    // so callbacks can see the current track
+    useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
 
@@ -99,6 +104,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         let cancelled = false;
         const audio = new Audio();
         audio.preload = "metadata";
+        audio.volume = MUSIC_VOLUME;
         audioRef.current = audio;
 
         const onTimeUpdate = () => setProgress(audio.currentTime);
@@ -108,14 +114,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const onDurationChange = () => {
             if (audio.duration > 0 && isFinite(audio.duration)) setDuration(audio.duration);
         };
-        // When a preview finishes skip to the next random song
+        // song ended, play the next one
         const onEnded = () => {
-            fetchRandomTrack().then((track) => {
+            fetchNextTrack(currentTrackRef.current).then((track) => {
                 if (cancelled || !track || !audioRef.current) {
                     setIsPlaying(false);
                     return;
                 }
                 const a = audioRef.current;
+                historyRef.current.push(currentTrackRef.current);
                 setCurrentTrack(track);
                 setProgress(0);
                 setDuration(0);
@@ -165,6 +172,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
+        if (currentTrack.src) historyRef.current.push(currentTrack);
         setCurrentTrack(track);
         setProgress(0);
         setDuration(0);
@@ -172,7 +180,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audio.load();
         audio.play().catch((e) => console.error("Audio play error", e));
         setIsPlaying(true);
-    }, [currentTrack.id, isPlaying]);
+    }, [currentTrack, isPlaying]);
 
 const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -195,15 +203,16 @@ const seek = useCallback((time: number) => {
     setProgress(time);
 }, []);
 
-// Jump to a new random song
+// next song
 const shuffleTrack = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const wasPlaying = isPlaying;
-    const track = await fetchRandomTrack();
+    const track = await fetchNextTrack(currentTrack);
     if (!track) return;
 
+    if (currentTrack.src) historyRef.current.push(currentTrack);
     setCurrentTrack(track);
     setProgress(0);
     setDuration(0);
@@ -212,6 +221,29 @@ const shuffleTrack = useCallback(async () => {
     if (wasPlaying) {
         audio.play().catch((e) => console.error("Audio play error", e));
         setIsPlaying(true);
+    }
+}, [isPlaying, currentTrack]);
+
+// previous song
+const previousTrack = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const prev = historyRef.current.pop();
+    if (!prev || !prev.src) {
+        // nothing before this one, so restart it
+        audio.currentTime = 0;
+        setProgress(0);
+        return;
+    }
+
+    setCurrentTrack(prev);
+    setProgress(0);
+    setDuration(0);
+    audio.src = prev.src;
+    audio.load();
+    if (isPlaying) {
+        audio.play().catch((e) => console.error("Audio play error", e));
     }
 }, [isPlaying]);
 
@@ -226,6 +258,7 @@ return (
             togglePlay,
             seek,
             shuffleTrack,
+            previousTrack,
         }}
     >
         {children}

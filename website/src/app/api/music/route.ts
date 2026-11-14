@@ -59,9 +59,29 @@ async function resolve(song: { title: string; artist: string }) {
     };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     if (!playlist.length) {
         return NextResponse.json({ error: 'Playlist is empty' }, { status: 500 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const reqTitle = searchParams.get('title');
+    const reqArtist = searchParams.get('artist');
+
+    // look up a specific song if one was asked for
+    if (reqTitle && reqArtist) {
+        const match = playlist.find(
+            (s) => s.title.toLowerCase() === reqTitle.toLowerCase() &&
+                   s.artist.toLowerCase() === reqArtist.toLowerCase()
+        );
+        if (!match) {
+            return NextResponse.json({ error: 'Song not in playlist' }, { status: 404 });
+        }
+        try {
+            const track = await resolve(match);
+            if (track) return NextResponse.json(track);
+        } catch { /* fall through */ }
+        return NextResponse.json({ error: 'No preview found for requested song' }, { status: 404 });
     }
 
     // Try a few random songs in case some have no iTunes preview 
