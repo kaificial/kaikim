@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import HeroPhotoStack from '../HeroPhotoStack';
 import { useTheme } from '../ThemeContext';
@@ -22,8 +22,32 @@ const onTap = (toggle: () => void) => (e: React.PointerEvent) => {
 
 const posterGridClass = 'absolute bottom-full mb-3 z-50 pointer-events-none rounded-[16px] overflow-hidden shadow-2xl border border-black/10 dark:border-white/10 grid gap-0 left-1/2 lg:-translate-x-1/2 lg:origin-bottom w-[85vw] max-w-[320px] h-[28vw] max-h-[120px]';
 
+const MOVIES = ['/assets/interstellar.jpg', '/assets/arrival.jpg', '/assets/eternal.jpg', '/assets/lala.jpg'];
+const SHOWS = ['/music/Barry.jpg', '/assets/severance.jpg', '/assets/bb.jpg', '/assets/invincible.jpg'];
+
+// resized copy, the originals are huge
+const posterSrc = (src: string) => `/_next/image?url=${encodeURIComponent(src)}&w=256&q=75`;
+
+// load each set once so they show together
+const preloaded = new Map<string, Promise<void>>();
+const keep: HTMLImageElement[] = [];
+const preloadPosters = (posters: string[]) => {
+    const key = posters.join('|');
+    let p = preloaded.get(key);
+    if (!p) {
+        p = Promise.all(posters.map((src) => {
+            const img = new Image();
+            img.src = posterSrc(src);
+            keep.push(img);
+            return img.decode().catch(() => {});
+        })).then(() => {});
+        preloaded.set(key, p);
+    }
+    return p;
+};
+
 const Poster = ({ src }: { src: string }) => (
-    <div style={{ backgroundImage: `url(${src})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+    <div style={{ backgroundImage: `url(${posterSrc(src)})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
 );
 
 /** underlined word that shows a strip of posters on hover */
@@ -37,27 +61,44 @@ const PosterHover = ({ id, word, slot, posters, shiftClass, originClass, hovered
     originClass: string;
     hovered: string | null;
     setHovered: (id: string | null) => void;
-}) => (
+}) => {
+    // wait until all posters are loaded
+    const [ready, setReady] = useState(false);
+    const load = () => { if (!ready) preloadPosters(posters).then(() => setReady(true)); };
+
+    return (
     <span
         className="ul-host relative inline-block cursor-pointer"
-        onPointerEnter={mouseOnly(() => setHovered(id))}
+        onPointerEnter={mouseOnly(() => { load(); setHovered(id); })}
         onPointerLeave={mouseOnly(() => setHovered(null))}
-        onPointerUp={onTap(() => setHovered(hovered === id ? null : id))}
+        onPointerUp={onTap(() => { load(); setHovered(hovered === id ? null : id); })}
     >
         {rt(<span className="ul-link">{word}</span>, slot)}
         <AnimatePresence>
-            {hovered === id && (
+            {hovered === id && ready && (
                 <motion.div {...POP} className={`${posterGridClass} ${shiftClass} ${originClass}`} style={{ gridTemplateColumns: `repeat(${posters.length}, 1fr)` }}>
                     {posters.map((p) => <Poster key={p} src={p} />)}
                 </motion.div>
             )}
         </AnimatePresence>
     </span>
-);
+    );
+};
 
 export const Hero = () => {
     const { isDark } = useTheme();
     const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
+
+    // preload posters when the page is idle
+    useEffect(() => {
+        const run = () => { preloadPosters(MOVIES); preloadPosters(SHOWS); };
+        if ('requestIdleCallback' in window) {
+            const id = requestIdleCallback(run, { timeout: 2000 });
+            return () => cancelIdleCallback(id);
+        }
+        const t = setTimeout(run, 1000);
+        return () => clearTimeout(t);
+    }, []);
     // about text reveals after the name
     const para = revealSequence(13);
 
@@ -116,7 +157,7 @@ export const Hero = () => {
                         slot={para.next()}
                         shiftClass="-translate-x-[85%]"
                         originClass="origin-[85%_100%]"
-                        posters={['/assets/interstellar.jpg', '/assets/arrival.jpg', '/assets/eternal.jpg', '/assets/lala.jpg']}
+                        posters={MOVIES}
                         hovered={hoveredIcon}
                         setHovered={setHoveredIcon}
                     />
@@ -127,7 +168,7 @@ export const Hero = () => {
                         slot={para.next()}
                         shiftClass="-translate-x-[90%]"
                         originClass="origin-[90%_100%]"
-                        posters={['/music/Barry.jpg', '/assets/severance.jpg', '/assets/bb.jpg', '/assets/invincible.jpg']}
+                        posters={SHOWS}
                         hovered={hoveredIcon}
                         setHovered={setHoveredIcon}
                     />
