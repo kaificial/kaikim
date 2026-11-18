@@ -9,6 +9,7 @@ import { sfx } from "../../lib/sfx";
 import type { MediaEntry, MediaKind } from "../../data/media";
 import { Shelf } from "../../components/shelf/Shelf";
 import styles from "./notes.module.scss";
+import { blurIn, revealSequence } from "../../components/home/TextReveal";
 import { DURATION, EASE_OUT, exitFor, HOVER_CARD, POP, PRESS } from '../../styles/motion';
 
 type Category = 'all' | MediaKind;
@@ -176,20 +177,19 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
         padding: 0,
     });
 
-    const enter = (index: number) => ({
-        initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: {
-            delay: reduceMotion ? 0 : isInitialLoad ? startDelay + index * 0.05 : index * 0.03,
-            duration: reduceMotion ? 0.15 : 0.3,
-            ease: EASE,
-        },
-    });
+    // toolbar first, then items
+    const ITEMS_AT = startDelay + 0.16;
+    // slower on first load, faster when filtering
+    const enter = (index: number) => {
+        if (reduceMotion) return { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.15 } };
+        if (isInitialLoad) return blurIn(ITEMS_AT + index * 0.05);
+        return { ...blurIn(index * 0.03), transition: { delay: index * 0.03, duration: 0.3, ease: EASE } };
+    };
 
     return (
         <div>
             {/* type tabs on the left, layout on the right */}
-            <div className={styles.toolbar} style={{ marginBottom: '16px' }}>
+            <motion.div {...blurIn(startDelay)} className={styles.toolbar} style={{ marginBottom: '16px' }}>
                 <div role="tablist" aria-label="Media type" className={styles.tabs}>
                     {CATEGORIES.map((cat) => {
                         const active = category === cat.key;
@@ -236,10 +236,10 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
                         </button>
                     ))}
                 </div>
-            </div>
+            </motion.div>
 
             {/* search */}
-            <div className={styles.filters} style={{ marginBottom: '28px' }}>
+            <motion.div {...blurIn(startDelay + 0.08)} className={styles.filters} style={{ marginBottom: '28px' }}>
                 <label className={styles.search} style={{ ...fieldStyle, display: 'flex', alignItems: 'center', gap: '8px', padding: '0 10px', borderRadius: '8px' }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
                     <input
@@ -251,7 +251,7 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
                         style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: textPrimary, font: 'inherit', fontSize: '0.8125rem', minHeight: '32px' }}
                     />
                 </label>
-            </div>
+            </motion.div>
 
             {hasFilters && items.length > 0 && (
                 <p style={{ fontSize: '0.75rem', color: textSecondary, margin: '-16px 0 20px' }}>
@@ -270,7 +270,7 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
                     key={`shelf-${category}`}
                     media={items}
                     isDark={isDark}
-                    entranceDelay={(i) => (isInitialLoad ? startDelay + i * 0.05 : i * 0.03)}
+                    entranceDelay={(i) => (isInitialLoad ? ITEMS_AT + i * 0.05 : i * 0.03)}
                 />
             ) : view === 'grid' ? (
                 <motion.div
@@ -466,8 +466,8 @@ const LetterboxdLink = ({ href, color }: { href: string; color: string }) => {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative inline-block"
-            style={{ color, textDecoration: 'underline', textUnderlineOffset: '3px' }}
+            className="ul-link relative inline-block"
+            style={{ color }}
             onPointerDown={(e) => { lastPointer.current = e.pointerType; }}
             onPointerEnter={(e) => { if (e.pointerType === 'mouse') open(); }}
             onPointerLeave={(e) => { if (e.pointerType === 'mouse') setPeek(null); }}
@@ -498,36 +498,33 @@ const LetterboxdLink = ({ href, color }: { href: string; color: string }) => {
 export default function NotesClient({ media, letterboxdProfile }: { media: MediaEntry[]; letterboxdProfile: string }) {
     const { isDark } = useTheme();
 
+    // reveal order: title, intro, letterboxd link, collection
+    const flow = revealSequence(0);
+    const title = flow.rt('Notes', 'text-reveal-hero');
+    const intro = flow.rt('Thoughts and ratings on films and shows.');
+    const linkIn = flow.block(2);
+    const collectionAt = flow.at();
+
     return (
         <div className="container mx-auto px-4 py-24 max-w-2xl">
             <header style={{ marginBottom: '40px' }}>
-                <motion.h1
-                    className="hero-title font-bold text-gray-900 dark:text-white tracking-tight leading-none text-left"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
-                >
-                    Notes
-                </motion.h1>
-                <motion.p
+                <h1 className="hero-title font-bold text-gray-900 dark:text-white tracking-tight leading-none text-left">
+                    {title}
+                </h1>
+                <p
                     className="text-base text-gray-600 dark:text-gray-400 max-w-xl text-left"
                     style={{ marginTop: '16px', marginBottom: '0' }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.35, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    Thoughts and ratings on films and shows.{' '}
-                    <LetterboxdLink href={letterboxdProfile} color={isDark ? '#8f8f8f' : '#6b7280'} />
-                </motion.p>
+                    {intro}{' '}
+                    <motion.span {...linkIn} style={{ display: 'inline-block' }}>
+                        <LetterboxdLink href={letterboxdProfile} color={isDark ? '#8f8f8f' : '#6b7280'} />
+                    </motion.span>
+                </p>
             </header>
 
-            <motion.section
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
-                <MediaCollection media={media} isDark={isDark} startDelay={1.6} />
-            </motion.section>
+            <section>
+                <MediaCollection media={media} isDark={isDark} startDelay={collectionAt} />
+            </section>
 
             <div className="footer-spacer" />
         </div>

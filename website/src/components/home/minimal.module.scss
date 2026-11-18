@@ -1,0 +1,95 @@
+// experience list styles
+.mono {
+    --m-fg: var(--c-text-strong);
+    --m-body: var(--c-text-muted);
+    --m-label: var(--c-text-muted);
+
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--m-body);
+}
+
+.strong {
+    font-weight: 600;
+    color: var(--m-fg);
+}
+
+.logo {
+    display: inline-block;
+    width: auto;
+    height: 1em;
+    max-width: 2.4em;
+    margin-right: 6px;
+    vertical-align: -0.12em;
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+:global(html.dark) .invertDark,
+:global(html:not(.dark)) .invertLight {
+    filter: invert(1);
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.row {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    // extra padding for the hover highlight, text stays aligned
+    padding: 10px 12px;
+    margin-inline: -12px;
+    border-radius: 10px;
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 0.25s var(--ease-out);
+
+    // content above the highlight
+    > :not(.highlight) {
+        position: relative;
+        z-index: 1;
+    }
+}
+
+.highlight {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--c-surface);
+    box-shadow: inset 0 0 0 1px var(--c-hairline), 0 1px 2px rgba(0, 0, 0, 0.04);
+    z-index: 0;
+}
+
+:global(html.dark) .highlight {
+    background: var(--c-tag-bg);
+    box-shadow: inset 0 0 0 1px var(--c-hairline);
+}
+
+.role {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dates {
+    display: inline-flex;
+    align-items: baseline;
+    font-size: 0.875rem;
+    color: var(--m-label);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.arrow {
+    display: inline-block;
+    overflow: hidden;
+    text-align: right;
+    color: var(--m-fg);
+}

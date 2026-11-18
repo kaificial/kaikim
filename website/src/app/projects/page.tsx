@@ -6,12 +6,12 @@ import { useUISound } from '../../hooks/use-ui-sound';
 import Image from 'next/image';
 import { projects } from '../../data/projects';
 import { SpotlightCard } from '../../components/SpotlightCard';
-import Link from 'next/link';
-import { useState } from 'react';
-import { ProjectDescription } from '../../components/ProjectDescription';
+import { useEffect, useState } from 'react';
 import Webring from '../../components/Webring';
 import { ProjectVideo } from '../../components/ProjectVideo';
-import { mouseOnly, PRESS } from '../../styles/motion';
+import { NavButton } from '../../components/NavButton';
+import { PRESS } from '../../styles/motion';
+import { blurIn, revealSequence } from '../../components/home/TextReveal';
 
 const ProjectTitle = ({ project, isDark }: { project: any, isDark: boolean }) => (
     <h3 style={{
@@ -28,15 +28,15 @@ export default function ProjectsPage() {
     const { isDark } = useTheme();
     const { playClick } = useUISound();
     const [searchQuery, setSearchQuery] = useState('');
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
-
-    const toggleExpand = (id: string) => {
-        playClick();
-        setExpandedItems(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
-    };
+    // reveal order: title, intro, search, cards, back button
+    const flow = revealSequence(0);
+    const CARD_STEP = 0.08; // seconds between cards
+    // after first load, search results animate instantly
+    const [settled, setSettled] = useState(false);
+    useEffect(() => {
+        const t = window.setTimeout(() => setSettled(true), 4000);
+        return () => window.clearTimeout(t);
+    }, []);
 
     const filteredProjects = projects.filter(project => {
         const query = searchQuery.toLowerCase();
@@ -46,6 +46,12 @@ export default function ProjectsPage() {
             project.tags.some(tag => tag.toLowerCase().includes(query))
         );
     });
+
+    const title = flow.rt('Projects', 'text-reveal-hero');
+    const intro = flow.rt('Projects ranging from in-browser AI and developer tools to bias detection, handwriting recognition, and interactive 3D web apps.');
+    const searchIn = flow.block(6);
+    const cardsAt = flow.at();
+    const backAt = blurIn(cardsAt + projects.length * CARD_STEP);
 
     return (
         <div className="w-full">
@@ -57,30 +63,20 @@ export default function ProjectsPage() {
             }}>
                 <section>
                     <header style={{ marginBottom: '64px' }}>
-                        <motion.h1
-                            className="hero-title font-bold text-gray-900 dark:text-white tracking-tight leading-none text-left"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2, duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
-                        >
-                            Projects
-                        </motion.h1>
-                        <motion.p
+                        <h1 className="hero-title font-bold text-gray-900 dark:text-white tracking-tight leading-none text-left">
+                            {title}
+                        </h1>
+                        <p
                             className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-xl text-left"
                             style={{ marginTop: '16px', marginBottom: '20px' }}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1.35, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
                         >
-                            Projects ranging from full stack web development, machine learning, and AI to computer vision and more.
-                        </motion.p>
+                            {intro}
+                        </p>
                     </header>
 
                     {/* Search Bar */}
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.5, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        {...searchIn}
                         style={{
                             marginBottom: '40px',
                             position: 'relative'
@@ -154,24 +150,15 @@ export default function ProjectsPage() {
                         </div>
                     </motion.div>
 
-                    <motion.div
-                        className="projects-grid"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.6, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-                    >
+                    <div className="projects-grid">
                         <AnimatePresence mode="popLayout">
-                            {filteredProjects.map((project) => (
+                            {filteredProjects.map((project, i) => (
                                 <motion.div
                                     key={project.id}
                                     layout
-                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                                    transition={{
-                                        duration: 0.4,
-                                        ease: [0.22, 1, 0.36, 1]
-                                    }}
+                                    {...blurIn(cardsAt + i * CARD_STEP)}
+                                    exit={{ opacity: 0, filter: 'blur(8px)', y: -6, transition: { duration: 0.25 } }}
+                                    {...(settled && { transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } })}
                                     className="h-full"
                                 >
                                     <SpotlightCard isDark={isDark} noPadding={true}>
@@ -222,16 +209,13 @@ export default function ProjectsPage() {
                                             }}>
                                                 {/* Header with title and status */}
                                                 <div>
+                                                    {/* title left, status right */}
                                                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
                                                         <ProjectTitle project={project} isDark={isDark} />
                                                         <div style={{
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             gap: '6px',
-                                                            padding: '4px 10px',
-                                                            borderRadius: '9999px',
-                                                            backgroundColor: isDark ? 'rgba(28, 28, 28, 0.65)' : '#f3f4f6',
-                                                            border: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
                                                             flexShrink: 0
                                                         }}>
                                                             <div
@@ -244,7 +228,7 @@ export default function ProjectsPage() {
                                                                 }}
                                                             />
                                                             <span style={{
-                                                                color: isDark ? '#c8c8c8' : '#4b5563',
+                                                                color: isDark ? '#8f8f8f' : '#6b7280',
                                                                 fontSize: '0.75rem',
                                                                 fontWeight: '500',
                                                                 whiteSpace: 'nowrap'
@@ -396,48 +380,27 @@ export default function ProjectsPage() {
                             </motion.div>
                         )}
 
-                    </motion.div>
+                    </div>
 
                     {/* Back to Home Button - moved outside grid */}
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        {...backAt}
                         className="back-to-home-wrapper"
                     >
-                        <Link
+                        <NavButton
                             href="/"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                color: isDark ? '#8f8f8f' : '#6b7280',
-                                fontSize: '0.75rem',
-                                fontWeight: '500',
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-                                backgroundColor: isDark ? '#141414' : 'white',
-                                transition: 'background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s var(--ease-out)',
-                                textDecoration: 'none'
+                            back
+                            label="Back to Home"
+                            pendingLabel="Heading home…"
+                            colors={{
+                                fg: isDark ? '#8f8f8f' : '#6b7280',
+                                fgHover: isDark ? '#f5f5f5' : '#1c1917',
+                                border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                                borderHover: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                                bg: isDark ? '#141414' : 'white',
                             }}
-                            onPointerEnter={mouseOnly((e: React.PointerEvent<HTMLAnchorElement>) => {
-                                e.currentTarget.style.color = isDark ? '#f5f5f5' : '#1c1917';
-                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
-                                e.currentTarget.style.transform = 'translateY(-1px)';
-                            })}
-                            onPointerLeave={mouseOnly((e: React.PointerEvent<HTMLAnchorElement>) => {
-                                e.currentTarget.style.color = isDark ? '#8f8f8f' : '#6b7280';
-                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-                                e.currentTarget.style.transform = 'translateY(0)';
-                            })}
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back to Home
-                        </Link>
+                            style={{ fontSize: '0.75rem', fontWeight: 500, padding: '6px 12px' }}
+                        />
                     </motion.div>
                 </section>
 

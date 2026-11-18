@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeContext";
 
 // footer with pixel mountains drawn on a canvas. a few layers of ridges in mist,
@@ -175,6 +176,7 @@ function draw(canvas: HTMLCanvasElement, isDark: boolean) {
 
 export default function SiteFooter() {
     const { isDark } = useTheme();
+    const pathname = usePathname();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -198,7 +200,7 @@ export default function SiteFooter() {
         <footer className="site-footer">
             <canvas ref={canvasRef} className="site-footer-canvas" aria-hidden="true" />
             <div className="site-footer-row">
-                <span>© {new Date().getFullYear()} Kai Kim</span>
+                {!pathname?.startsWith('/notes') && <span>© {new Date().getFullYear()} Kai Kim</span>}
             </div>
         </footer>
     );
