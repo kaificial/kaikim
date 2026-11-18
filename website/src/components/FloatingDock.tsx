@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import { Fragment, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from './ThemeContext';
