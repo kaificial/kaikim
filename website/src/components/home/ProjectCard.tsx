@@ -8,7 +8,7 @@ import { ProjectVideo } from '../ProjectVideo';
 import { useTheme } from '../ThemeContext';
 import { cssVar } from '../../styles/palette';
 import type { Project } from '../../data/projects';
-import { revealDelay, TextReveal } from './TextReveal';
+import { BELOW_HERO, revealDelay, TextReveal } from './TextReveal';
 import { HOVER_PILL, mouseOnly, PRESS } from '../../styles/motion';
 import { sfx } from '../../lib/sfx';
 
@@ -28,7 +28,7 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
     const [showAllTags, setShowAllTags] = useState(false);
 
     // cards reveal one after another, not all at once
-    const base = 8.6 + index * 0.5;
+    const base = BELOW_HERO + 8.6 + index * 0.5;
     const slot = (offset: number) => revealDelay(base + offset);
 
     const visibleTags = showAllTags ? project.tags : project.tags.slice(0, MAX_VISIBLE_TAGS);
@@ -63,7 +63,7 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                         src={project.image}
                         alt={`${project.title} preview`}
                         fill
-                        sizes="(max-width: 768px) 100vw, 700px"
+                        sizes="(max-width: 768px) 100vw, 360px"
                         style={{ objectFit: 'cover' }}
                     />
                 ) : (
@@ -77,41 +77,6 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                         opacity: 0.3
                     }}>{project.icon}</div>
                 )}
-
-                {/* status sits on top of the reel so it doesn't fight with the title */}
-                <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    zIndex: 25,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '4px 10px',
-                    borderRadius: '9999px',
-                    backgroundColor: 'rgba(10, 10, 10, 0.62)',
-                    border: '1px solid rgba(255, 255, 255, 0.18)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    pointerEvents: 'none'
-                }}>
-                    <div
-                        className="status-dot-pulse"
-                        style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: STATUS_DOT[project.status] || '#9ca3af'
-                        }}
-                    />
-                    <span style={{
-                        color: '#f3f4f6',
-                        fontSize: '0.6875rem',
-                        fontWeight: 500,
-                        letterSpacing: '0.02em',
-                        whiteSpace: 'nowrap'
-                    }}>{project.status}</span>
-                </div>
             </div>
 
             {/* details */}
@@ -122,15 +87,25 @@ export const ProjectCard = ({ project, index }: { project: Project; index: numbe
                 gap: '10px',
                 flex: 1
             }}>
-                <h3 style={{
-                    fontSize: '1.375rem',
-                    fontWeight: 'bold',
-                    color: cssVar.textStrong,
-                    margin: 0,
-                    lineHeight: 1.2
-                }}>
-                    <TextReveal delay={slot(0)}>{project.title}</TextReveal>
-                </h3>
+                {/* title left, status right */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <h3 style={{
+                        fontSize: '1.375rem',
+                        fontWeight: 'bold',
+                        color: cssVar.textStrong,
+                        margin: 0,
+                        lineHeight: 1.2
+                    }}>
+                        <TextReveal delay={slot(0)}>{project.title}</TextReveal>
+                    </h3>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0, fontSize: '0.75rem', fontWeight: 500, color: cssVar.textMuted, whiteSpace: 'nowrap' }}>
+                        <span
+                            className="status-dot-pulse"
+                            style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: STATUS_DOT[project.status] || '#9ca3af' }}
+                        />
+                        <TextReveal delay={slot(0.05)}>{project.status}</TextReveal>
+                    </span>
+                </div>
 
                 <p style={{
                     fontSize: '0.8125rem',

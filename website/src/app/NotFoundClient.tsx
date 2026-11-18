@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../components/ThemeContext';
 import { cssVar } from '../styles/palette';
 import { sfx } from '../lib/sfx';
+import { blurIn } from '../components/home/TextReveal';
 import {
     Terminal,
     ROUTES,
@@ -238,24 +239,25 @@ export default function NotFoundClient() {
             color: cssVar.text,
         }}>
             <div style={{ width: '100%', maxWidth: '720px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+                {/* 404, terminal, then links fade in */}
+                <motion.div {...blurIn(0.1)}>
                     <ParticleText isDark={isDark} scatterRef={scatterRef} />
                 </motion.div>
 
-                <Terminal
-                    ref={terminalRef}
-                    commands={commands}
-                    initialLines={initialLines}
-                    onEmptySubmit={({ navigate }) => navigate(suggestion.path)}
-                    onMinimize={() => scatterRef.current?.()}
-                    minimizeLabel="Minimize (scatters the 404)"
-                />
+                <motion.div {...blurIn(0.25)}>
+                    <Terminal
+                        ref={terminalRef}
+                        commands={commands}
+                        initialLines={initialLines}
+                        onEmptySubmit={({ navigate }) => navigate(suggestion.path)}
+                        onMinimize={() => scatterRef.current?.()}
+                        minimizeLabel="Minimize (scatters the 404)"
+                    />
+                </motion.div>
 
                 <motion.nav
                     aria-label="Pages that do exist"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.3 }}
+                    {...blurIn(0.4)}
                     style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}
                 >
                     {ROUTES.map((r) => {

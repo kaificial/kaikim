@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useTheme } from '../ThemeContext';
 import { cssVar } from '../../styles/palette';
-import { revealDelay, rt, SectionHeading, TextReveal } from './TextReveal';
+import { BELOW_HERO, revealDelay, rt, SectionHeading, TextReveal } from './TextReveal';
 import { PRESS } from '../../styles/motion';
 
 const SIMPLE_ICON_SLUGS: Record<string, string> = {
@@ -33,6 +33,13 @@ const getSkillLogo = (skill: string, isDark: boolean) => {
     return `https://cdn.simpleicons.org/${slug}/${isDark ? 'E5E7EB' : '111827'}`;
 };
 
+// fade in each group on scroll
+const BLUR = {
+    hidden: { opacity: 0, filter: 'blur(8px)', y: 6 },
+    visible: { opacity: 1, filter: 'blur(0px)', y: 0, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] as const } },
+};
+
+// reveals after projects
 const GROUPS = [
     { title: 'Frontend & Frameworks', titleSlot: 7.6, chipSlot: 8.1, skills: ['React', 'Next.js', 'TypeScript', 'JavaScript', 'Tailwind CSS', 'HTML/CSS', 'Framer Motion'] },
     { title: 'Backend & Databases', titleSlot: 7.8, chipSlot: 8.5, skills: ['Node.js', 'Express.js', 'Python', 'Java', 'Spring Boot', 'MongoDB', 'PostgreSQL', 'REST APIs'] },
@@ -43,8 +50,8 @@ const SkillGroup = ({ title, titleSlot, chipSlot, skills }: (typeof GROUPS)[numb
     const { isDark } = useTheme();
 
     return (
-        <motion.div data-scroll-fx-group variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: '500', marginBottom: '8px', color: cssVar.textStrong }}>{rt(title, titleSlot)}</h3>
+        <motion.div data-scroll-fx-group variants={BLUR}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: '500', marginBottom: '8px', color: cssVar.textStrong }}>{rt(title, BELOW_HERO + titleSlot + 4)}</h3>
             <motion.div
                 style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}
                 variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
@@ -54,7 +61,7 @@ const SkillGroup = ({ title, titleSlot, chipSlot, skills }: (typeof GROUPS)[numb
                     return (
                         <motion.span
                             key={index}
-                            variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
+                            variants={BLUR}
                             whileHover={{ scale: 1.1, y: -2 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                             whileTap={PRESS}
@@ -83,7 +90,7 @@ const SkillGroup = ({ title, titleSlot, chipSlot, skills }: (typeof GROUPS)[numb
                                     <polyline points="8 6 2 12 8 18"></polyline>
                                 </svg>
                             )}
-                            <TextReveal delay={revealDelay(chipSlot + index * 0.04)}>{skill}</TextReveal>
+                            <TextReveal delay={revealDelay(BELOW_HERO + chipSlot + 4 + index * 0.04)}>{skill}</TextReveal>
                         </motion.span>
                     );
                 })}
@@ -93,13 +100,8 @@ const SkillGroup = ({ title, titleSlot, chipSlot, skills }: (typeof GROUPS)[numb
 };
 
 export const Skills = () => (
-    <motion.section
-        style={{ marginTop: '48px' }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 3.4, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-    >
-        <SectionHeading marginBottom="16px">{rt('Skills', 7)}</SectionHeading>
+    <section style={{ marginTop: '48px' }}>
+        <SectionHeading marginBottom="16px">{rt('Skills', BELOW_HERO + 11)}</SectionHeading>
 
         <motion.div
             style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
@@ -110,5 +112,5 @@ export const Skills = () => (
         >
             {GROUPS.map((g) => <SkillGroup key={g.title} {...g} />)}
         </motion.div>
-    </motion.section>
+    </section>
 );

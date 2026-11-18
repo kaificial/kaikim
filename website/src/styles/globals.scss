@@ -40,7 +40,6 @@
     --accent-blue: #3b82f6;
     --accent-hover: #2563eb;
 
-    --cursor-bloom-color: rgba(37, 99, 235, 0.035);
 
     // shared colours, keep in sync with src/styles/palette.ts
     // (framer-motion animations need the actual values from there)
@@ -115,7 +114,6 @@ html.theme-to-light::view-transition-old(root) {
     --text-color: #ececec;
     --grid-color: rgba(255, 255, 255, 0.025);
 
-    --cursor-bloom-color: rgba(255, 255, 255, 0.035);
 
     --c-text-strong: #f5f5f5;
     --c-text-muted: #8f8f8f;
@@ -184,7 +182,7 @@ html {
 
 @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
-        main :is(section h2, .experience-item, [data-scroll-fx]),
+        main :is(section h2, [data-scroll-fx]),
         main [data-scroll-fx-group] > * {
             transform-origin: 0% 100%;
             animation: scroll-deal linear both;
@@ -201,11 +199,11 @@ html {
         }
 
         // every other item comes in from the other side
-        main :is(.experience-item, [data-scroll-fx], [data-scroll-fx-group]):nth-child(even) {
+        main :is([data-scroll-fx], [data-scroll-fx-group]):nth-child(even) {
             --deal-dir: -1;
         }
 
-        main :is(.experience-item, [data-scroll-fx]):nth-child(even),
+        main [data-scroll-fx]:nth-child(even),
         main [data-scroll-fx-group]:nth-child(even) > * {
             transform-origin: 100% 100%;
         }
@@ -370,6 +368,11 @@ pre {
     isolation: isolate;
 }
 
+// words blur on their own, so skip the overlay
+.homepage-text-reveal .text-reveal-word::after {
+    display: none;
+}
+
 .homepage-text-reveal .text-reveal-hero {
     letter-spacing: -0.02em;
 }
@@ -409,18 +412,6 @@ pre {
         animation: none !important;
         display: none !important;
     }
-}
-
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
 }
 
 // header styles
@@ -524,45 +515,6 @@ pre {
     }
 }
 
-// theme toggle button on the right
-.theme-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background-color: var(--bg-color);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    color: var(--text-color);
-    cursor: pointer;
-    transition: transform 0.2s var(--ease-out), border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-
-    @include hover {
-        transform: translateY(-1px);
-        border-color: rgba(0, 0, 0, 0.2);
-    }
-
-    .moon-icon {
-        color: #334155; // slate-700
-    }
-}
-
-.dark .theme-toggle {
-    background-color: #141414;
-    border-color: rgba(255, 255, 255, 0.1);
-    color: white;
-
-    @include hover {
-        border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .moon-icon {
-        color: white;
-    }
-}
-
 .hero-title {
     font-size: 2.5rem !important;
     line-height: 1 !important;
@@ -585,56 +537,6 @@ pre {
         font-size: 4.25rem !important;
         margin-bottom: 0.5rem !important;
     }
-}
-
-.hero-subtitle {
-    font-size: 1.25rem !important;
-    white-space: nowrap !important;
-
-    @media (min-width: 640px) {
-        font-size: 1.375rem !important;
-    }
-
-    @media (min-width: 1024px) {
-        font-size: 1.5rem !important;
-    }
-}
-
-.hero-subtitle-row {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    margin-bottom: 24px !important;
-}
-
-// Location pill styling
-.location-pill {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    padding: 4px 10px !important;
-    background-color: #E5E7EB !important;
-    border: 1px solid #D1D5DB !important;
-    border-radius: 9999px !important;
-    font-size: 0.875rem !important;
-    color: #111827 !important;
-    font-weight: 500 !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-
-    svg {
-        width: 12px !important;
-        height: 12px !important;
-        flex-shrink: 0;
-    }
-}
-
-.dark .location-pill {
-    background-color: var(--c-chip-bg) !important;
-    color: var(--c-chip-fg) !important;
-    border: 1px solid var(--c-chip-border) !important;
 }
 
 // hero layout styling stacked on ip[hone, 2 columns on larger screens, laptop, lablet, etc.
@@ -662,68 +564,6 @@ pre {
 
 .hero-content {
     text-align: left;
-}
-
-.hero-image-container {
-    display: flex;
-    align-items: start;
-    justify-content: flex-end;
-    min-height: 200px;
-
-    @media (min-width: 640px) {
-        min-height: 250px;
-    }
-
-    @media (min-width: 1024px) {
-        min-height: 300px;
-    }
-}
-
-.image-placeholder {
-    width: 100%;
-    max-width: 160px;
-    height: auto;
-    aspect-ratio: 1 / 1;
-    border-radius: 15px;
-    // overflow: hidden // removed to let ghe tooltip pop out
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-
-    // outline effect using box-shadow
-    padding: 3px;
-    box-shadow: 0 0 0 2px #D1D5DB;
-    margin: 6px; // spacing for the shadow
-
-    @media (max-width: 559px) {
-        max-width: 96px !important;
-    }
-
-    @media (min-width: 640px) {
-        max-width: 200px;
-    }
-
-    @media (min-width: 1024px) {
-        max-width: 240px;
-    }
-
-    @include hover {
-        transform: scale(1.02);
-    }
-}
-
-.dark .image-placeholder {
-    padding: 3px;
-    box-shadow: 0 0 0 2px #2a2a2a;
-    margin: 6px;
-}
-
-.hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 12px; // soft corners
 }
 
 // mobile responsive header 
@@ -804,14 +644,6 @@ pre {
     }
 }
 
-// mobile hero pic container
-.hero-image-container {
-    @media (max-width: 559px) {
-        justify-content: center;
-        min-height: auto;
-    }
-}
-
 .dark {
     .header-nav.mobile-open {
         background-color: rgba(20, 20, 20, 0.92);
@@ -830,100 +662,6 @@ pre {
 // right side buttons always stay right
 .header-container>div:last-child {
     margin-left: auto;
-}
-
-// Experience section text flow 
-.experience-item {
-    @media (max-width: 559px) {
-        gap: 0px !important;
-
-        .experience-header {
-            display: flex;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-            flex-wrap: nowrap !important;
-
-            // logo + text 
-            >div:first-child {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                min-width: 0;
-            }
-        }
-
-        // date stays on same line, right-aligned
-        .experience-date {
-            font-size: 0.75rem !important;
-            text-align: right;
-            flex-shrink: 0;
-            margin-left: 0 !important;
-            margin-top: 2px;
-        }
-
-        // Logo container 
-        .experience-logo-container {
-            width: 44px !important;
-            min-width: 44px;
-            max-width: 44px;
-            flex-shrink: 0;
-            overflow: visible;
-
-            img {
-                width: 44px !important;
-                height: 44px !important;
-                max-width: none !important;
-            }
-        }
-
-        // Read more button 
-        .experience-btn {
-            margin-top: 2px !important;
-        }
-    }
-
-    @media (max-width: 380px) {
-        .experience-logo-container {
-            width: 36px !important;
-            min-width: 36px;
-            max-width: 36px;
-
-            img {
-                width: 36px !important;
-                height: 36px !important;
-            }
-        }
-
-        .experience-date {
-            margin-left: 44px !important;
-        }
-
-        .experience-btn {
-            margin-left: 44px !important;
-        }
-    }
-}
-
-.experience-btn {
-    margin-left: 68px; // Default for desktop
-
-    @media (max-width: 559px) {
-        margin-left: 52px !important;
-        margin-top: 2px !important;
-    }
-
-    @media (max-width: 380px) {
-        margin-left: 44px !important;
-    }
-}
-
-// projects page on mobile
-.projects-container {
-    @media (max-width: 559px) {
-        padding: 0 8px;
-    }
 }
 
 // floating dock mobile
@@ -1070,45 +808,12 @@ pre {
 }
 
 
-// Project detail page sticky header
-.project-detail-header {
-    background-color: transparent;
-    transition: background-color 0.3s var(--ease-out);
-}
-
-// When it is actually stuck at the top (scrolled down)
-@supports (position: sticky) {
-    .project-detail-header {
-        &::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.3s var(--ease-out);
-            pointer-events: none;
-        }
-    }
-}
-
-.cursor-bloom,
 .cursor-ripple-layer {
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: -1;
     contain: strict;
-}
-
-.cursor-bloom {
-    opacity: 0;
-    transition: opacity 0.45s var(--ease-out);
-    background: radial-gradient(circle 340px at var(--cursor-x) var(--cursor-y),
-            var(--cursor-bloom-color) 0%, transparent 62%);
-}
-
-body.cursor-grid-active .cursor-bloom {
-    opacity: 1;
 }
 
 .cursor-ripple {
@@ -1137,7 +842,6 @@ body.cursor-grid-active .cursor-bloom {
 
 @media (pointer: coarse) {
 
-    .cursor-bloom,
     .cursor-ripple-layer {
         display: none;
     }
@@ -1669,28 +1373,6 @@ body.custom-cursor-text .paper-cursor-root {
     will-change: transform, opacity;
 }
 
-/* GitHub contribution hover effect */
-.contrib-cell {
-    transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
-}
-
-.contrib-cell {
-    @include hover {
-        transform: scale(1.8);
-        z-index: 10;
-        box-shadow: 0 0 12px var(--cell-color, #3b82f6);
-    }
-}
-
-/* Scroll progress bar perf hint */
-.scroll-progress-bar {
-    will-change: transform;
-}
-
-/* Spotlight card containment  */
-.spotlight-card-contained {
-    contain: layout style;
-}
 /* 404 page: windows terminal close button goes red on hover, like the real one */
 .wt-close {
     @include hover {
@@ -1698,4 +1380,48 @@ body.custom-cursor-text .paper-cursor-root {
         color: #fff !important;
         opacity: 1 !important;
     }
+}
+
+/* animated underline for inline links */
+.ul-link {
+    --ul-y: calc(100% - 0.12em);
+    background: linear-gradient(currentColor, currentColor) no-repeat 0 var(--ul-y) / 100% 1px;
+    text-decoration: none;
+}
+@keyframes ul-sweep {
+    0%   { background-position: 100% var(--ul-y); background-size: 100% 1px; }
+    45%  { background-position: 100% var(--ul-y); background-size: 0 1px; }
+    46%  { background-position: 0 var(--ul-y);    background-size: 0 1px; }
+    100% { background-position: 0 var(--ul-y);    background-size: 100% 1px; }
+}
+@media (hover: hover) {
+    .ul-link:hover,
+    .ul-host:hover .ul-link {
+        animation: ul-sweep 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ul-link:hover,
+    .ul-host:hover .ul-link { animation: none; }
+}
+
+// toronto pill, same look as the nav bar
+.location-pill {
+    --pill-divider: rgba(0, 0, 0, 0.12);
+    background-color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(10px);
+    transition: background-color 0.3s var(--ease-out), border-color 0.2s var(--ease-out), box-shadow 0.3s var(--ease-out);
+}
+
+.dark .location-pill {
+    --pill-divider: rgba(255, 255, 255, 0.14);
+    background-color: rgba(20, 20, 20, 0.92);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
 }
