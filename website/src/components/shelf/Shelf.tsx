@@ -1,22 +1,159 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
+import { motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import type { MediaEntry } from "../../data/media";
-import { caseDims, FORMAT_LABEL, NEUTRAL_SPINE, resolveFormat, SHADE } from "./formats";
-import { Spine } from "./Spine";
+import { caseDims, FORMAT_LABEL, inkOn, NEUTRAL_SPINE, resolveFormat } from "./formats";
 import { CaseStage } from "./CaseStage";
+import { spineFont } from "./fonts";
 import { sfx } from "../../lib/sfx";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-const HEADROOM = 30; // room above the tallest case for the hover lift
-/** pulling a case up: quick, with the faintest settle so it feels like it has weight */
-const LIFT_SPRING = { type: 'spring', duration: 0.42, bounce: 0.12 } as const;
-/** neighbours leaning out of the way: slower and softer than the lift so the lift leads */
-const LEAN_SPRING = { type: 'spring', duration: 0.55, bounce: 0 } as const;
-/** how far the cases either side of a lifted one tip away from it */
-const LEAN_DEG = 1.6;
+/** turn spring, soft with no wobble */
+const TURN_SPRING = { stiffness: 170, damping: 26, mass: 1 };
+/** turn angle, leaves a sliver of spine showing */
+const TURN_DEG = 74;
+/** space above the row for the lift */
+const HEADROOM = 16;
 const formatRating = (r: number) => (Number.isInteger(r) ? `${r}` : r.toFixed(1));
+
+/** stable number from an id */
+const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+/** spine size, series get thicker per season */
+const spineSize = (m: MediaEntry) => {
+    const h = hash(m.id);
+    const width = 28 + (h % 4) * 3 + (m.kind === 'tv' ? Math.min(m.seasons ?? 1, 5) * 2 : 0);
+    const height = 200 + (h % 6) * 9;
+    return { width, height, cover: Math.round(height * 0.68) };
+};
+
+const mono = 'var(--font-mono), ui-monospace, monospace';
+
+/** a 3d book that turns to show its cover on hover */
+const Book = ({ entry, index, turned, isDark }: { entry: MediaEntry; index: number; turned: boolean; isDark: boolean }) => {
+    const { width, height, cover } = spineSize(entry);
+    const bg = entry.spineColor ?? NEUTRAL_SPINE;
+    const ink = inkOn(entry.spineColor);
+
+    // one spring drives everything so it stays in sync
+    const angle = useSpring(0, TURN_SPRING);
+    useEffect(() => { angle.set(turned ? TURN_DEG : 0); }, [turned, angle]);
+    const rad = (a: number) => (a * Math.PI) / 180;
+    // width the book takes up as it turns
+    const room = useTransform(angle, (a) => width * Math.cos(rad(a)) + cover * Math.sin(rad(a)));
+    const rotateY = useTransform(angle, (a) => -a);
+    const lift = useTransform(angle, (a) => (-a / TURN_DEG) * 6);
+    // shade faces as they turn away
+    const spineShade = useTransform(angle, (a) => 0.5 * Math.sin(rad(a)));
+    const coverShade = useTransform(angle, (a) => 0.6 * Math.cos(rad(a)));
+    const shadowScale = useTransform(angle, (a) => 1 + (a / TURN_DEG) * 0.25);
+
+    return (
+        <motion.div style={{ position: 'relative', width: room, height, perspective: 1100, perspectiveOrigin: `${width / 2}px -90px` }}>
+            {/* shadow */}
+            <motion.div aria-hidden style={{
+                position: 'absolute',
+                left: -4,
+                right: -4,
+                bottom: -5,
+                height: 10,
+                borderRadius: '50%',
+                background: `radial-gradient(closest-side, rgba(0,0,0,${isDark ? 0.7 : 0.22}), transparent)`,
+                scaleX: shadowScale,
+                pointerEvents: 'none',
+            }} />
+            <motion.div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width,
+                height,
+                y: lift,
+                rotateY,
+                transformOrigin: '0 50% 0',
+                transformStyle: 'preserve-3d',
+                willChange: 'transform',
+            }}>
+                {/* cover */}
+                <div style={{
+                    position: 'absolute',
+                    left: width,
+                    top: 0,
+                    width: cover,
+                    height,
+                    transformOrigin: '0 50%',
+                    transform: 'rotateY(90deg)',
+                    background: bg,
+                    overflow: 'hidden',
+                }}>
+                    <Image src={entry.poster} alt="" fill sizes={`${cover}px`} style={{ objectFit: 'cover' }} />
+                    {/* crease */}
+                    <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(0,0,0,0.35), rgba(255,255,255,0.08) 4%, transparent 9%, transparent 88%, rgba(0,0,0,0.12))' }} />
+                    <motion.div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000', opacity: coverShade }} />
+                </div>
+
+                {/* pages on top */}
+                <div aria-hidden style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width,
+                    height: cover,
+                    transformOrigin: '50% 0',
+                    transform: 'rotateX(-90deg)',
+                    background: `linear-gradient(90deg, ${bg} 0 3px, transparent 3px calc(100% - 3px), ${bg} calc(100% - 3px)), repeating-linear-gradient(90deg, #f3eee2 0 1px, #e3dccb 1px 2px)`,
+                    boxShadow: `inset 0 3px 0 ${bg}`,
+                }} />
+
+                {/* spine */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: bg,
+                        color: ink,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        padding: '10px 0 8px',
+                        boxSizing: 'border-box',
+                        // rounded spine shading
+                        backgroundImage: 'linear-gradient(90deg, rgba(0,0,0,0.22), rgba(255,255,255,0.14) 16%, rgba(255,255,255,0.03) 42%, transparent 60%, rgba(0,0,0,0.28))',
+                    }}
+                >
+                    <span style={{ writingMode: 'vertical-rl', fontFamily: mono, fontSize: 8, letterSpacing: '0.18em', opacity: 0.65 }}>
+                        {entry.year}
+                    </span>
+                    <span
+                        className={spineFont.className}
+                        style={{
+                            flex: 1,
+                            minHeight: 0,
+                            marginTop: 10,
+                            writingMode: 'vertical-rl',
+                            fontSize: Math.min(width * 0.45, 15),
+                            fontWeight: 800,
+                            letterSpacing: '0.03em',
+                            lineHeight: 1,
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {entry.title}
+                    </span>
+                    <span style={{ fontFamily: mono, fontSize: 8, opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>
+                        {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <motion.div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000', opacity: spineShade }} />
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
 
 const ShelfRow = ({ label, items, isDark, pulledId, entranceDelay, registerSpine, onPull }: {
     label: string;
@@ -29,17 +166,16 @@ const ShelfRow = ({ label, items, isDark, pulledId, entranceDelay, registerSpine
 }) => {
     const reduceMotion = useReducedMotion();
     const [active, setActive] = useState(0);
-    // only keyboard focus leans a case out, focus coming back after a mouse put-back stays still
+    // only keyboard focus turns a book
     const [keyboardFocus, setKeyboardFocus] = useState<number | null>(null);
     const [hovered, setHovered] = useState<number | null>(null);
-    // the case that's pulled up: under the mouse, or keyboard focused
-    const lifted = reduceMotion ? null : hovered ?? keyboardFocus;
+    // hovered or focused book
+    const turned = reduceMotion ? null : hovered ?? keyboardFocus;
     const scrollRef = useRef<HTMLDivElement>(null);
     const buttons = useRef<(HTMLButtonElement | null)[]>([]);
     const dragMoved = useRef(false);
-    const tallest = Math.max(...items.map((m) => caseDims(m).height));
-    // which ends have more cases out of view. they fade so you can tell the shelf scrolls,
-    // which matters on touch screens where there's no scrollbar or drag cursor
+    const tallest = Math.max(...items.map((m) => spineSize(m).height));
+    // fade the edges when there's more to scroll
     const [overflow, setOverflow] = useState({ start: false, end: false });
 
     useEffect(() => {
@@ -54,15 +190,17 @@ const ShelfRow = ({ label, items, isDark, pulledId, entranceDelay, registerSpine
         el.addEventListener('scroll', measure, { passive: true });
         const ro = new ResizeObserver(measure);
         ro.observe(el);
+        ro.observe(el.firstElementChild as Element);
         return () => { el.removeEventListener('scroll', measure); ro.disconnect(); };
     }, [items.length]);
 
     const fade = (on: boolean) => (on ? '28px' : '0px');
     const edgeMask = `linear-gradient(to right, transparent 0, #000 ${fade(overflow.start)}, #000 calc(100% - ${fade(overflow.end)}), transparent 100%)`;
 
-    const textSecondary = isDark ? '#6e6e6e' : '#6b7280';
+    const textStrong = isDark ? '#e5e5e5' : '#111827';
+    const textMuted = isDark ? '#6e6e6e' : '#9ca3af';
 
-    // arrow keys walk along the shelf, only one spine is in the tab order
+    // arrow keys move along the row
     const onKeyDown = (e: React.KeyboardEvent) => {
         const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
         const jump = e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : null;
@@ -73,7 +211,7 @@ const ShelfRow = ({ label, items, isDark, pulledId, entranceDelay, registerSpine
         buttons.current[next]?.focus();
     };
 
-    // mouse drag-to-scroll with a bit of momentum, touch keeps normal scrolling
+    // drag to scroll with momentum
     const onPointerDown = (e: React.PointerEvent) => {
         const el = scrollRef.current;
         if (!el || e.pointerType !== 'mouse' || e.button !== 0 || el.scrollWidth <= el.clientWidth) return;
@@ -109,161 +247,75 @@ const ShelfRow = ({ label, items, isDark, pulledId, entranceDelay, registerSpine
     };
 
     return (
-        <div style={{ marginBottom: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px', fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: textSecondary }}>
-                <span style={{ fontWeight: 600 }}>{label}</span>
-                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{items.length}</span>
+        <div style={{ marginBottom: '36px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '14px', fontFamily: mono, fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                <span style={{ color: textStrong, fontWeight: 600 }}>{label}</span>
+                <span style={{ color: textMuted, fontVariantNumeric: 'tabular-nums' }}>{items.length} {items.length === 1 ? 'title' : 'titles'}</span>
             </div>
 
-            {/* cubby: back wall, then the plank the cases stand on */}
-            <div style={{
-                borderRadius: '6px 6px 0 0',
-                background: isDark ? 'linear-gradient(#161616, #0e0e0e)' : 'linear-gradient(#ededf0, #e1e1e5)',
-                boxShadow: 'inset 0 14px 18px -14px rgba(0,0,0,0.45)',
-            }}>
-                <div
-                    ref={scrollRef}
-                    role="group"
-                    aria-label={`${label} shelf. Use the arrow keys to browse and Enter to take a case off the shelf.`}
-                    onKeyDown={onKeyDown}
-                    onPointerDown={onPointerDown}
-                    onClickCapture={(e) => {
-                        if (dragMoved.current) { e.stopPropagation(); e.preventDefault(); dragMoved.current = false; }
-                    }}
-                    style={{
-                        overflowX: 'auto',
-                        overflowY: 'hidden',
-                        scrollbarWidth: 'none',
-                        paddingTop: HEADROOM,
-                        // a sideways swipe scrolls the shelf, not the browser's back/forward gesture
-                        overscrollBehaviorX: 'contain',
-                        // dragging the shelf shouldn't select the spine titles
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        maskImage: edgeMask,
-                        WebkitMaskImage: edgeMask,
-                    }}
-                >
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                        gap: '2px',
-                        padding: '0 14px',
-                        width: 'max-content',
-                        minHeight: tallest,
-                        perspective: '900px',
-                        perspectiveOrigin: '50% -60%',
-                    }}>
-                        {items.map((m, i) => {
-                            const format = resolveFormat(m);
-                            const dims = caseDims(m, format);
-                            const pulled = pulledId === m.id;
-                            const isLifted = lifted === i;
-                            // the cases right next to it lean away, tipping on their outer bottom corner
-                            const side = lifted === null || pulled ? 0 : i === lifted - 1 ? -1 : i === lifted + 1 ? 1 : 0;
-                            return (
-                                <motion.div
-                                    key={m.id}
-                                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 28 }}
-                                    animate={{ opacity: 1, y: 0, rotate: side * LEAN_DEG, x: side * 1.5 }}
-                                    transition={{
-                                        default: { delay: reduceMotion ? 0 : entranceDelay(i), duration: 0.45, ease: EASE },
-                                        rotate: LEAN_SPRING,
-                                        x: LEAN_SPRING,
-                                    }}
-                                    style={{ position: 'relative', transformStyle: 'preserve-3d', flexShrink: 0, transformOrigin: side < 0 ? '0% 100%' : '100% 100%' }}
-                                >
-                                    {/* contact shadow on the plank: tight and dark when standing, soft and faint when pulled up */}
-                                    {!pulled && (
-                                        <motion.div
-                                            aria-hidden
-                                            initial={false}
-                                            animate={isLifted ? { opacity: 0.35, scaleX: 1.6, scaleY: 1.4 } : { opacity: 1, scaleX: 1, scaleY: 1 }}
-                                            transition={LIFT_SPRING}
-                                            style={{
-                                                position: 'absolute',
-                                                left: -3,
-                                                right: -3,
-                                                bottom: -3,
-                                                height: 6,
-                                                borderRadius: '50%',
-                                                background: `radial-gradient(closest-side, rgba(0,0,0,${isDark ? 0.75 : 0.32}), transparent)`,
-                                                pointerEvents: 'none',
-                                            }}
-                                        />
-                                    )}
-                                    <motion.button
-                                        ref={(el) => { buttons.current[i] = el; registerSpine(m.id, el); }}
-                                        type="button"
-                                        tabIndex={i === active ? 0 : -1}
-                                        aria-label={`${m.title}, ${m.year}, ${FORMAT_LABEL[format]}, rated ${formatRating(m.rating)} out of 5`}
-                                        aria-haspopup="dialog"
-                                        onFocus={(e) => { setActive(i); setKeyboardFocus(e.currentTarget.matches(':focus-visible') ? i : null); }}
-                                        onBlur={() => setKeyboardFocus(null)}
-                                        onHoverStart={(e) => { setHovered(i); sfx.tick({ x: e.clientX }); }}
-                                        onHoverEnd={() => setHovered((h) => (h === i ? null : h))}
-                                        onClick={() => { setHovered(null); onPull(m); }}
-                                        initial={false}
-                                        animate={isLifted ? 'lift' : 'rest'}
-                                        variants={{ rest: { y: 0, rotateX: 0 }, lift: { y: -14, rotateX: -9 } }}
-                                        transition={LIFT_SPRING}
-                                        style={{
-                                            display: 'block',
-                                            position: 'relative',
-                                            padding: 0,
-                                            border: 'none',
-                                            background: 'none',
-                                            cursor: 'pointer',
-                                            transformOrigin: '50% 100%',
-                                            transformStyle: 'preserve-3d',
-                                            visibility: pulled ? 'hidden' : 'visible',
-                                            boxShadow: isDark ? '2px 0 3px rgba(0,0,0,0.5)' : '2px 0 3px rgba(0,0,0,0.18)',
-                                        }}
-                                    >
-                                        <Spine entry={m} format={format} dims={dims} />
-                                        {/* top edge, going back into the shelf */}
-                                        <div aria-hidden style={{
-                                            position: 'absolute',
-                                            left: 0,
-                                            top: 0,
-                                            width: dims.depth,
-                                            height: dims.width * 0.6,
-                                            background: m.spineColor ?? NEUTRAL_SPINE,
-                                            filter: SHADE.top,
-                                            transformOrigin: '50% 0',
-                                            transform: 'rotateX(-90deg)',
-                                        }} />
-                                    </motion.button>
-                                </motion.div>
-                            );
-                        })}
-                        {/* bookend holding the row up */}
-                        <div aria-hidden style={{ display: 'flex', alignItems: 'flex-end', marginLeft: '3px', height: tallest * 0.55 }}>
-                            <div style={{
-                                width: '5px',
-                                height: '100%',
-                                borderRadius: '2px 2px 0 0',
-                                background: isDark ? 'linear-gradient(90deg, #5c5c5c, #2c2c2c)' : 'linear-gradient(90deg, #9a9aa2, #6c6c74)',
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.3)',
-                            }} />
-                            <div style={{ width: '22px', height: '3px', background: isDark ? '#3a3a3a' : '#85858d' }} />
-                        </div>
-                    </div>
+            <div
+                ref={scrollRef}
+                role="group"
+                aria-label={`${label}. Use the arrow keys to browse and Enter to open one.`}
+                onKeyDown={onKeyDown}
+                onPointerDown={onPointerDown}
+                onClickCapture={(e) => {
+                    if (dragMoved.current) { e.stopPropagation(); e.preventDefault(); dragMoved.current = false; }
+                }}
+                style={{
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollbarWidth: 'none',
+                    // don't trigger back/forward swipe
+                    overscrollBehaviorX: 'contain',
+                    // no text selection while dragging
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    maskImage: edgeMask,
+                    WebkitMaskImage: edgeMask,
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', width: 'max-content', height: tallest + HEADROOM + 8, paddingBottom: 8, boxSizing: 'border-box' }}>
+                    {items.map((m, i) => {
+                        const format = resolveFormat(m);
+                        const pulled = pulledId === m.id;
+                        return (
+                            <motion.button
+                                key={m.id}
+                                ref={(el) => { buttons.current[i] = el; registerSpine(m.id, el); }}
+                                type="button"
+                                tabIndex={i === active ? 0 : -1}
+                                aria-label={`${m.title}, ${m.year}, ${FORMAT_LABEL[format]}, rated ${formatRating(m.rating)} out of 5`}
+                                aria-haspopup="dialog"
+                                onFocus={(e) => { setActive(i); setKeyboardFocus(e.currentTarget.matches(':focus-visible') ? i : null); }}
+                                onBlur={() => setKeyboardFocus(null)}
+                                onHoverStart={(e) => { setHovered(i); sfx.tick({ x: e.clientX }); }}
+                                onHoverEnd={() => setHovered((h) => (h === i ? null : h))}
+                                onClick={() => { setHovered(null); onPull(m); }}
+                                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: reduceMotion ? 0 : entranceDelay(i), duration: 0.45, ease: EASE }}
+                                style={{
+                                    display: 'block',
+                                    flexShrink: 0,
+                                    padding: 0,
+                                    border: 'none',
+                                    background: 'none',
+                                    cursor: 'pointer',
+                                    visibility: pulled ? 'hidden' : 'visible',
+                                }}
+                            >
+                                <Book entry={m} index={i} turned={turned === i} isDark={isDark} />
+                            </motion.button>
+                        );
+                    })}
                 </div>
             </div>
-            <div aria-hidden style={{
-                height: '14px',
-                borderRadius: '0 0 4px 4px',
-                background: isDark
-                    ? 'linear-gradient(#34343a 0, #34343a 3px, #232327 3px, #1a1a1d 100%)'
-                    : 'linear-gradient(#f7f7f9 0, #f7f7f9 3px, #cfcfd4 3px, #bcbcc2 100%)',
-                boxShadow: isDark ? '0 10px 16px -8px rgba(0,0,0,0.7)' : '0 10px 16px -8px rgba(0,0,0,0.25)',
-            }} />
         </div>
     );
 };
 
-/** the collection as cases on shelves, one shelf per kind. click a spine to take the case down */
+/** rows of books, one per kind */
 export const Shelf = ({ media, isDark, entranceDelay }: {
     media: MediaEntry[];
     isDark: boolean;

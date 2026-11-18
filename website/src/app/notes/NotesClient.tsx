@@ -64,7 +64,6 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
     const textPrimary = isDark ? '#e6e6e6' : '#18181b';
     const textSecondary = isDark ? '#6e6e6e' : '#6b7280';
     const borderColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
-    const fieldBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)';
     const activeBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
     useEffect(() => {
@@ -152,12 +151,6 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
         setHash(null);
     };
 
-    const fieldStyle: React.CSSProperties = {
-        color: textPrimary,
-        backgroundColor: fieldBg,
-        border: `1px solid ${borderColor}`,
-    };
-
     const linkBtn: React.CSSProperties = {
         background: 'none', border: 'none', padding: 0, color: accent, cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit',
     };
@@ -239,18 +232,47 @@ const MediaCollection = ({ media, isDark, startDelay = 0 }: { media: MediaEntry[
             </motion.div>
 
             {/* search */}
-            <motion.div {...blurIn(startDelay + 0.08)} className={styles.filters} style={{ marginBottom: '28px' }}>
-                <label className={styles.search} style={{ ...fieldStyle, display: 'flex', alignItems: 'center', gap: '8px', padding: '0 10px', borderRadius: '8px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-                    <input
-                        type="search"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search titles"
-                        aria-label="Search titles"
-                        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: textPrimary, font: 'inherit', fontSize: '0.8125rem', minHeight: '32px' }}
-                    />
-                </label>
+            {/* search, same as the projects page */}
+            <motion.div {...blurIn(startDelay + 0.08)} style={{ marginBottom: '28px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div style={{ position: 'absolute', left: '16px', color: isDark ? '#8f8f8f' : '#6b7280', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </div>
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search titles..."
+                    aria-label="Search titles"
+                    className={styles.searchInput}
+                    style={{
+                        width: '100%',
+                        padding: '14px 44px 14px 48px',
+                        borderRadius: '12px',
+                        backgroundColor: isDark ? '#141414' : 'white',
+                        border: `1px solid ${isDark ? '#1b1b1b' : '#e5e7eb'}`,
+                        color: isDark ? '#f5f5f5' : '#1c1917',
+                        font: 'inherit',
+                        fontSize: '1rem',
+                        outline: 'none',
+                        boxShadow: isDark ? 'none' : '0 2px 4px rgba(0,0,0,0.02)',
+                    }}
+                />
+                {query && (
+                    <button
+                        type="button"
+                        aria-label="Clear search"
+                        onClick={() => { playClick(); setQuery(''); }}
+                        style={{ position: 'absolute', right: '16px', background: 'transparent', border: 'none', color: isDark ? '#8f8f8f' : '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                )}
             </motion.div>
 
             {hasFilters && items.length > 0 && (

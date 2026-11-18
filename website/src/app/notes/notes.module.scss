@@ -24,25 +24,18 @@ $touch: "(hover: none) and (pointer: coarse)";
     }
 }
 
-/* search */
-.filters {
-    display: flex;
+/* search, same focus ring as the projects page */
+.searchInput {
+    transition: background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+
+    &:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.05) !important;
+    }
 }
 
-.search {
-    flex: 1 1 auto;
-    min-width: 0;
-    transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-
-    // the input itself has no outline, so the field shows focus instead
-    &:focus-within {
-        border-color: var(--accent-blue) !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-    }
-
-    input::-webkit-search-cancel-button {
-        cursor: pointer;
-    }
+:global(.dark) .searchInput:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
 
 /* list rows and layout buttons: hover tint only on real pointers so it never sticks after a tap */
