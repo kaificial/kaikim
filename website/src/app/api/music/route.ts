@@ -20,14 +20,27 @@ function normalize(s: string): string {
         .trim();
 }
 
+type Resolved = { id: string; title: string; artist: string; src: string };
+// songs already looked up, so repeats skip itunes and its rate limit
+const cache = new Map<string, Resolved | null>();
+
 async function resolve(song: { title: string; artist: string }) {
+    const key = `${song.artist}|${song.title}`;
+    if (cache.has(key)) return cache.get(key)!;
+    const track = await lookup(song);
+    cache.set(key, track);
+    return track;
+}
+
+async function lookup(song: { title: string; artist: string }): Promise<Resolved | null> {
     const term = encodeURIComponent(`${song.artist} ${song.title}`);
     const res = await fetch(
-
         `https://itunes.apple.com/search?term=${term}&entity=song&limit=25`,
-        { cache: 'no-store' }
+        // don't let one slow lookup hang the skip
+        { cache: 'no-store', signal: AbortSignal.timeout(4000) }
     );
-    if (!res.ok) return null;
+    // rate limited or down: throw so it isn't cached as missing
+    if (!res.ok) throw new Error(`itunes ${res.status}`);
     const data = await res.json();
     const results: iTunesResult[] = data.results ?? [];
 
