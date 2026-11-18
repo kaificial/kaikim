@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useScroll, useTransform, useMotionTemplate } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -272,6 +272,8 @@ const MusicWidget = () => {
     const expand = () => { sfx.pop(); setMode('music'); measureSlot(); setIslandPresent(true); setIsExpanded(true); };
     const collapse = () => {
         if (mode === 'palette') sfx.close(); else playClick();
+        setIsWidgetHovered(false);
+        setHoverText(null);
         measureSlot();
         setFloatInstant(!docked);
         requestAnimationFrame(() => setIsExpanded(false));
@@ -517,12 +519,15 @@ const MusicWidget = () => {
                 // mouse only: touch fakes enter on tap and never leaves. (done inline, not with mouseOnly(),
                 // because the react compiler thinks a wrapped ref read happens during render)
                 if (e.pointerType !== 'mouse') return;
+                // ignore hovers from portaled children outside the widget
+                if (!slotRef.current?.contains(e.target as Node)) return;
                 const rect = slotRef.current?.getBoundingClientRect();
                 setIsWidgetHovered(true);
                 setHoverText("Click to Expand");
                 setMousePos({ x: e.clientX, y: e.clientY, widgetLeft: rect?.left || 0, widgetWidth: rect?.width || 150 });
             }}
             onMouseMove={(e) => {
+                if (!slotRef.current?.contains(e.target as Node)) return;
                 const rect = slotRef.current?.getBoundingClientRect();
                 setMousePos({ x: e.clientX, y: e.clientY, widgetLeft: rect?.left || 0, widgetWidth: rect?.width || 150 });
             }}
@@ -671,7 +676,7 @@ const MusicWidget = () => {
 
             {mounted && createPortal(
                 <AnimatePresence>
-                    {isWidgetHovered && !isExpanded && hoverText && (() => {
+                    {isWidgetHovered && !isExpanded && !islandPresent && hoverText && (() => {
                         const T = hoverText === "Click to Expand" ? 125 : hoverText === "Pause Song" ? 85 : 80;
                         const minLeft = mousePos.widgetLeft;
                         const maxLeft = mousePos.widgetLeft + mousePos.widgetWidth - T;
@@ -732,9 +737,10 @@ const MusicWidget = () => {
 
 export default function Header() {
     const pathname = usePathname();
-    const { isDark, toggleTheme } = useTheme();
+    const { isDark } = useTheme();
     const { playClick } = useUISound();
-    const [count, setCount] = useState(0);
+    // real like count, used to roll back a failed like
+    const countRef = useRef(0);
     const [displayCount, setDisplayCount] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -748,7 +754,7 @@ export default function Header() {
                 const res = await fetch('/api/likes');
                 const data = await res.json();
                 const globalCount = data.count || 0;
-                setCount(globalCount);
+                countRef.current = globalCount;
                 setDisplayCount(0);
 
                 const duration = 2400;
@@ -772,8 +778,8 @@ export default function Header() {
     const handleLikeClick = async () => {
         if (hasLiked) return;
 
-        let previousCount = 0;
-        setCount(prev => { previousCount = prev; return prev + 1; });
+        const previousCount = countRef.current;
+        countRef.current += 1;
         setDisplayCount(prev => prev + 1);
         setHasLiked(true);
         localStorage.setItem("has-liked-site", "true");
@@ -784,7 +790,7 @@ export default function Header() {
 
             if (!res.ok) {
                 if (res.status === 400 && data.error === "already_liked") return;
-                setCount(previousCount);
+                countRef.current = previousCount;
                 setDisplayCount(previousCount);
                 setHasLiked(false);
                 localStorage.removeItem("has-liked-site");
@@ -793,12 +799,12 @@ export default function Header() {
             }
 
             if (data.count != null) {
-                setCount(data.count);
+                countRef.current = data.count;
                 setDisplayCount(data.count);
             }
         } catch (error) {
             console.error("Try Again", error);
-            setCount(previousCount);
+            countRef.current = previousCount;
             setDisplayCount(previousCount);
             setHasLiked(false);
             localStorage.removeItem("has-liked-site");
