@@ -1,24 +1,20 @@
 "use client";
 
-import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { NavButton } from '../NavButton';
 import { projects } from '../../data/projects';
-import { cssVar } from '../../styles/palette';
-import { rt, SectionHeading } from './TextReveal';
+import { cssVar, usePalette } from '../../styles/palette';
+import { BELOW_HERO, blurIn, revealDelay, rt, SectionHeading } from './TextReveal';
 import { ProjectCard } from './ProjectCard';
-import { EASE_OUT, mouseOnly } from '../../styles/motion';
 
-// home sections come in top to bottom on load: experience 1.8s, education 2.2s, projects, then skills
-const SECTION_DELAY = 2.6;
-const CARD_STAGGER = 0.12;
+// reveals after the hero (see BELOW_HERO)
+const HEADING = BELOW_HERO + 8;
+const CARD_STAGGER = 0.12; // seconds between cards
 
-export const FeaturedProjects = () => (
-    <motion.section
-        style={{ marginTop: '48px' }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: SECTION_DELAY, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-    >
+export const FeaturedProjects = () => {
+    const c = usePalette();
+    return (
+    <section style={{ marginTop: '48px' }}>
         <div style={{
             display: 'flex',
             alignItems: 'baseline',
@@ -27,10 +23,11 @@ export const FeaturedProjects = () => (
             flexWrap: 'wrap',
             marginBottom: '20px'
         }}>
-            <SectionHeading marginBottom={0}>{rt('Projects', 8)}</SectionHeading>
+            <SectionHeading marginBottom={0}>{rt('Projects', HEADING)}</SectionHeading>
         </div>
 
-        <div className="projects-grid" style={{ gridTemplateColumns: '1fr' }}>
+        {/* 2 columns on desktop, 1 on mobile */}
+        <div className="projects-grid">
             {projects
                 .filter(p => p.id !== 'portfolio')
                 .map((project, i) => (
@@ -38,9 +35,7 @@ export const FeaturedProjects = () => (
                     <motion.div
                         key={project.id}
                         className="h-full"
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: SECTION_DELAY + 0.2 + i * CARD_STAGGER, duration: 0.6, ease: EASE_OUT }}
+                        {...blurIn(revealDelay(HEADING + 0.5) + i * CARD_STAGGER)}
                     >
                         <ProjectCard project={project} index={i} />
                     </motion.div>
@@ -48,29 +43,16 @@ export const FeaturedProjects = () => (
         </div>
 
         <div style={{ marginTop: '16px', textAlign: 'left' }}>
-            <Link href="/projects" style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.8rem',
-                fontWeight: '500',
-                color: cssVar.chipFg,
-                textDecoration: 'none',
-                backgroundColor: cssVar.chipBg,
-                border: `1px solid ${cssVar.chipBorder}`,
-                padding: '7px 16px',
-                borderRadius: '8px',
-                transition: 'opacity 0.2s'
-            }}
-                onPointerEnter={mouseOnly((e) => e.currentTarget.style.opacity = '0.9')}
-                onPointerLeave={mouseOnly((e) => e.currentTarget.style.opacity = '1')}
+            <NavButton
+                href="/projects"
+                label="View All Projects"
+                pendingLabel="Opening projects…"
+                colors={{ fg: cssVar.chipFg, fgHover: c.chipHoverFg, border: cssVar.chipBorder, borderHover: c.chipHoverBorder, bg: cssVar.chipBg, bgHover: c.chipHoverBg }}
+                style={{ fontSize: '0.8rem', fontWeight: 500, padding: '7px 16px' }}
             >
-                {rt('View All Projects', 9.9)}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14"></path>
-                    <path d="M12 5l7 7-7 7"></path>
-                </svg>
-            </Link>
+                {rt('View All Projects', HEADING + 1.9)}
+            </NavButton>
         </div>
-    </motion.section>
-);
+    </section>
+    );
+};
