@@ -10,6 +10,7 @@ import { LocationPill } from './LocationPill';
 import { POP, mouseOnly } from '../../styles/motion';
 import { cssVar } from '../../styles/palette';
 import { sfx } from '../../lib/sfx';
+import { PixelHover } from '../PixelHover';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -73,7 +74,7 @@ const PosterHover = ({ id, word, slot, posters, shiftClass, originClass, hovered
         onPointerLeave={mouseOnly(() => setHovered(null))}
         onPointerUp={onTap(() => { load(); setHovered(hovered === id ? null : id); })}
     >
-        {rt(<span className="ul-link">{word}</span>, slot)}
+        {rt(<PixelHover className="ul-link">{word}</PixelHover>, slot)}
         <AnimatePresence>
             {hovered === id && ready && (
                 <motion.div {...POP} className={`${posterGridClass} ${shiftClass} ${originClass}`} style={{ gridTemplateColumns: `repeat(${posters.length}, 1fr)` }}>

@@ -7,6 +7,7 @@ import { useTheme } from "../../components/ThemeContext";
 import { useUISound } from "../../hooks/use-ui-sound";
 import { sfx } from "../../lib/sfx";
 import type { MediaEntry, MediaKind } from "../../data/media";
+import { PixelHover } from "../../components/PixelHover";
 import { Shelf } from "../../components/shelf/Shelf";
 import styles from "./notes.module.scss";
 import { blurIn, revealSequence } from "../../components/home/TextReveal";
@@ -488,7 +489,7 @@ const LetterboxdLink = ({ href, color }: { href: string; color: string }) => {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="ul-link relative inline-block"
+            className="ul-host relative inline-block"
             style={{ color }}
             onPointerDown={(e) => { lastPointer.current = e.pointerType; }}
             onPointerEnter={(e) => { if (e.pointerType === 'mouse') open(); }}
@@ -500,7 +501,7 @@ const LetterboxdLink = ({ href, color }: { href: string; color: string }) => {
                 open();
             }}
         >
-            Letterboxd ↗
+            <PixelHover className="ul-link">Letterboxd ↗</PixelHover>
             <AnimatePresence>
                 {peek && (
                     <motion.span

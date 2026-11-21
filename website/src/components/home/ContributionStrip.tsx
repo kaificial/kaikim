@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cssVar } from '../../styles/palette';
 import { useTheme } from '../ThemeContext';
 import { TOOLTIP } from '../../styles/motion';
+import { PixelHover } from '../PixelHover';
 
 /** github-style contribution graph for the last year. hover a day to see its count */
 
@@ -182,7 +183,7 @@ export const ContributionStrip = ({ username }: { username: string }) => {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d={GITHUB_PATH} />
                         </svg>
-                        <span className="ul-link">@{username}</span>
+                        <PixelHover className="ul-link">@{username}</PixelHover>
                     </a>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                         Less

@@ -1405,6 +1405,29 @@ body.custom-cursor-text .paper-cursor-root {
     .ul-host:hover .ul-link { animation: none; }
 }
 
+// pixel block fill on hover (PixelHover.tsx); the canvas sits behind the text
+.pixel-link {
+    position: relative;
+    display: inline-block;
+    isolation: isolate;
+    animation: none !important;
+}
+.pixel-link-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+}
+.pixel-link.pixel-active {
+    // the underline would show through as grey lines across the highlight
+    background-image: none;
+}
+.pixel-link.pixel-on {
+    color: var(--bg-color);
+}
+
 // toronto pill, same look as the nav bar
 .location-pill {
     --pill-divider: rgba(0, 0, 0, 0.12);

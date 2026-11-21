@@ -817,9 +817,11 @@ export default function Header() {
         <header className="header">
             <motion.div
                 className="header-container"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.1, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                // same blur-in as the hero text and sections. filter is cleared at the end
+                // because any filter here would stop the nav pill's backdrop blur rendering
+                initial={{ opacity: 0, filter: 'blur(8px)', y: 6 }}
+                animate={{ opacity: 1, filter: 'blur(0px)', y: 0, transitionEnd: { filter: 'none' } }}
+                transition={{ delay: 1.1, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
                 style={{ position: 'relative' }}
             >
                 <div className="mobile-menu-wrapper">
